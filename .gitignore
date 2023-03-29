@@ -1,0 +1,5 @@
+.idea
+my-venv
+**/.pytest_cache
+**/__pycache__
+06/fixtures/*.hack
