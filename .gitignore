@@ -19,3 +19,5 @@ my-venv
 05/*.tst
 05/*.hack
 06/fixtures/*.hack
+07/fixtures/**/*.out
+07/fixtures/**/*.asm
