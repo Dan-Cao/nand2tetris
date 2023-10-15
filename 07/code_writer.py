@@ -19,6 +19,9 @@ class CodeWriter:
         self.label_counter += 1
         return label
 
+    def get_static_symbol(self, index):
+        return f"@{self.file_name}.{index}"
+
     def write_arithmetic(self, command):
         self.output.append(f"// {command}")
         match command:
@@ -323,6 +326,21 @@ class CodeWriter:
                             "M=M+1",
                         ]
                     )
+                elif segment == "static":
+                    self.output.extend(
+                        [
+                            self.get_static_symbol(index=index),
+                            # Read value at index
+                            "D=M",
+                            # Dereference stack pointer and store value into stack
+                            "@SP",
+                            "A=M",
+                            "M=D",
+                            # Increment stack pointer
+                            "@SP",
+                            "M=M+1",
+                        ]
+                    )
                 else:
                     raise NotImplementedError(f"Unsupported push segment {segment}")
 
@@ -476,6 +494,21 @@ class CodeWriter:
                             # Reference address of index in segment
                             "@R13",
                             "A=M",
+                            # Store result
+                            "M=D",
+                        ]
+                    )
+                elif segment == "static":
+                    self.output.extend(
+                        [
+                            # Decrement stack pointer
+                            "@SP",
+                            "M=M-1",
+                            # Get value from top of stack and store in d,
+                            "A=M",
+                            "D=M",
+                            # Reference address of index in segment
+                            self.get_static_symbol(index=index),
                             # Store result
                             "M=D",
                         ]
