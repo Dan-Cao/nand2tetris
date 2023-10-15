@@ -20,7 +20,7 @@ def translate(filename: Path):
 
     parser_ = Parser(commands=vm_commands)
     code_writer = CodeWriter()
-    code_writer.set_file_name(filename)
+    code_writer.set_file_name(filename.stem)
 
     while parser_.has_more_commands():
         parser_.advance()

@@ -303,6 +303,26 @@ class CodeWriter:
                             "M=M+1",
                         ]
                     )
+                elif segment == "pointer":
+                    self.output.extend(
+                        [
+                            # Set d register to base of pointer segment
+                            "@3",
+                            "D=A",
+                            # Index into d
+                            f"@{index}",
+                            "A=D+A",
+                            # Read value at index
+                            "D=M",
+                            # Dereference stack pointer and store value into stack
+                            "@SP",
+                            "A=M",
+                            "M=D",
+                            # Increment stack pointer
+                            "@SP",
+                            "M=M+1",
+                        ]
+                    )
                 else:
                     raise NotImplementedError(f"Unsupported push segment {segment}")
 
@@ -415,6 +435,31 @@ class CodeWriter:
                         [
                             # Get address of temp segment, store in d register
                             "@R5",
+                            "D=A",
+                            # Index into d
+                            f"@{index}",
+                            "D=D+A",
+                            # Store address of index in segment in R13
+                            "@R13",
+                            "M=D",
+                            # Decrement stack pointer
+                            "@SP",
+                            "M=M-1",
+                            # Get value from top of stack and store in d,
+                            "A=M",
+                            "D=M",
+                            # Reference address of index in segment
+                            "@R13",
+                            "A=M",
+                            # Store result
+                            "M=D",
+                        ]
+                    )
+                elif segment == "pointer":
+                    self.output.extend(
+                        [
+                            # Get address of pointer segment, store in d register
+                            "@R3",
                             "D=A",
                             # Index into d
                             f"@{index}",
