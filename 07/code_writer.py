@@ -203,10 +203,239 @@ class CodeWriter:
                             "M=M+1",
                         ]
                     )
+                elif segment == "local":
+                    self.output.extend(
+                        [
+                            # Get address of local segment, store in d register
+                            "@LCL",
+                            "D=M",
+                            # Index into d
+                            f"@{index}",
+                            "A=D+A",
+                            # Read value at index
+                            "D=M",
+                            # Dereference stack pointer and store value into stack
+                            "@SP",
+                            "A=M",
+                            "M=D",
+                            # Increment stack pointer
+                            "@SP",
+                            "M=M+1",
+                        ]
+                    )
+                elif segment == "argument":
+                    self.output.extend(
+                        [
+                            # Get address of argument segment, store in d register
+                            "@ARG",
+                            "D=M",
+                            # Index into d
+                            f"@{index}",
+                            "A=D+A",
+                            # Read value at index
+                            "D=M",
+                            # Dereference stack pointer and store value into stack
+                            "@SP",
+                            "A=M",
+                            "M=D",
+                            # Increment stack pointer
+                            "@SP",
+                            "M=M+1",
+                        ]
+                    )
+                elif segment == "this":
+                    self.output.extend(
+                        [
+                            # Get address of this segment, store in d register
+                            "@THIS",
+                            "D=M",
+                            # Index into d
+                            f"@{index}",
+                            "A=D+A",
+                            # Read value at index
+                            "D=M",
+                            # Dereference stack pointer and store value into stack
+                            "@SP",
+                            "A=M",
+                            "M=D",
+                            # Increment stack pointer
+                            "@SP",
+                            "M=M+1",
+                        ]
+                    )
+                elif segment == "that":
+                    self.output.extend(
+                        [
+                            # Get address of this segment, store in d register
+                            "@THAT",
+                            "D=M",
+                            # Index into d
+                            f"@{index}",
+                            "A=D+A",
+                            # Read value at index
+                            "D=M",
+                            # Dereference stack pointer and store value into stack
+                            "@SP",
+                            "A=M",
+                            "M=D",
+                            # Increment stack pointer
+                            "@SP",
+                            "M=M+1",
+                        ]
+                    )
+                elif segment == "temp":
+                    self.output.extend(
+                        [
+                            # Set d register to base of temp segment
+                            "@5",
+                            "D=A",
+                            # Index into d
+                            f"@{index}",
+                            "A=D+A",
+                            # Read value at index
+                            "D=M",
+                            # Dereference stack pointer and store value into stack
+                            "@SP",
+                            "A=M",
+                            "M=D",
+                            # Increment stack pointer
+                            "@SP",
+                            "M=M+1",
+                        ]
+                    )
                 else:
-                    raise NotImplementedError(f"Unsupported segment {segment}")
+                    raise NotImplementedError(f"Unsupported push segment {segment}")
 
             case CommandType.C_POP:
                 self.output.append(f"// pop {segment} {index}")
+                if segment == "constant":
+                    raise Exception("Cannot pop into constant segment")
+                elif segment == "local":
+                    self.output.extend(
+                        [
+                            # Get address of local segment, store in d register
+                            "@LCL",
+                            "D=M",
+                            # Index into d
+                            f"@{index}",
+                            "D=D+A",
+                            # Store address of index in segment in R13
+                            "@R13",
+                            "M=D",
+                            # Decrement stack pointer
+                            "@SP",
+                            "M=M-1",
+                            # Get value from top of stack and store in d,
+                            "A=M",
+                            "D=M",
+                            # Reference address of index in segment
+                            "@R13",
+                            "A=M",
+                            # Store result
+                            "M=D",
+                        ]
+                    )
+                elif segment == "argument":
+                    self.output.extend(
+                        [
+                            # Get address of argument segment, store in d register
+                            "@ARG",
+                            "D=M",
+                            # Index into d
+                            f"@{index}",
+                            "D=D+A",
+                            # Store address of index in segment in R13
+                            "@R13",
+                            "M=D",
+                            # Decrement stack pointer
+                            "@SP",
+                            "M=M-1",
+                            # Get value from top of stack and store in d,
+                            "A=M",
+                            "D=M",
+                            # Reference address of index in segment
+                            "@R13",
+                            "A=M",
+                            # Store result
+                            "M=D",
+                        ]
+                    )
+                elif segment == "this":
+                    self.output.extend(
+                        [
+                            # Get address of this segment, store in d register
+                            "@THIS",
+                            "D=M",
+                            # Index into d
+                            f"@{index}",
+                            "D=D+A",
+                            # Store address of index in segment in R13
+                            "@R13",
+                            "M=D",
+                            # Decrement stack pointer
+                            "@SP",
+                            "M=M-1",
+                            # Get value from top of stack and store in d,
+                            "A=M",
+                            "D=M",
+                            # Reference address of index in segment
+                            "@R13",
+                            "A=M",
+                            # Store result
+                            "M=D",
+                        ]
+                    )
+                elif segment == "that":
+                    self.output.extend(
+                        [
+                            # Get address of that segment, store in d register
+                            "@THAT",
+                            "D=M",
+                            # Index into d
+                            f"@{index}",
+                            "D=D+A",
+                            # Store address of index in segment in R13
+                            "@R13",
+                            "M=D",
+                            # Decrement stack pointer
+                            "@SP",
+                            "M=M-1",
+                            # Get value from top of stack and store in d,
+                            "A=M",
+                            "D=M",
+                            # Reference address of index in segment
+                            "@R13",
+                            "A=M",
+                            # Store result
+                            "M=D",
+                        ]
+                    )
+                elif segment == "temp":
+                    self.output.extend(
+                        [
+                            # Get address of temp segment, store in d register
+                            "@R5",
+                            "D=A",
+                            # Index into d
+                            f"@{index}",
+                            "D=D+A",
+                            # Store address of index in segment in R13
+                            "@R13",
+                            "M=D",
+                            # Decrement stack pointer
+                            "@SP",
+                            "M=M-1",
+                            # Get value from top of stack and store in d,
+                            "A=M",
+                            "D=M",
+                            # Reference address of index in segment
+                            "@R13",
+                            "A=M",
+                            # Store result
+                            "M=D",
+                        ]
+                    )
+                else:
+                    raise NotImplementedError(f"Unsupported segment {segment}")
             case _:
                 raise NotImplementedError(f"Unknown push/pop command {command}")
