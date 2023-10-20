@@ -21,3 +21,5 @@ my-venv
 06/fixtures/*.hack
 07/fixtures/**/*.out
 07/fixtures/**/*.asm
+08/fixtures/**/*.out
+08/fixtures/**/*.asm
