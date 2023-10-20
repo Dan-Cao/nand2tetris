@@ -526,10 +526,16 @@ class CodeWriter:
         self.output.append(f"({self.file_name}.func_name${label})")
 
     def write_goto(self, label):
-        pass
+        self.output.append(f"// goto {label}")
+        self.output.extend(
+            [
+                f"@{self.file_name}.func_name${label}",
+                "0;JMP",
+            ]
+        )
 
     def write_if(self, label):
-        self.output.append(f"// label {label}")
+        self.output.append(f"// if-goto {label}")
         self.output.extend(
             [
                 # Decrement stack pointer,

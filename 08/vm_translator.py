@@ -44,6 +44,8 @@ def translate(filename: Path):
                 code_writer.write_label(parser_.arg1())
             case CommandType.C_IF:
                 code_writer.write_if(parser_.arg1())
+            case CommandType.C_GOTO:
+                code_writer.write_goto(parser_.arg1())
             case _:
                 raise NotImplementedError(f"Unsupported command type {command_type}")
 
