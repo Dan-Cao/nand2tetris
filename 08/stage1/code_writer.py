@@ -25,9 +25,7 @@ class CodeWriter:
         return label
 
     def new_return_label(self):
-        label = f"{self.function_name}$ret.{self.return_counter}"
-        self.return_counter += 1
-        return label
+        pass
 
     def get_static_symbol(self, index):
         return f"@{self.file_name}.{index}"
@@ -529,29 +527,17 @@ class CodeWriter:
                 raise NotImplementedError(f"Unknown push/pop command {command}")
 
     def write_init(self):
-        self.output.append("// init")
-        self.output.extend(
-            [
-                # SP=256
-                "@256",
-                "D=A",
-                "@SP",
-                "M=D",
-            ]
-        )
-        # call Sys.init
-        self.write_call("Sys.init", 0)
-        self.output.extend(["// loop forever", "(END)", "@END", "0;JMP"])
+        pass
 
     def write_label(self, label):
         self.output.append(f"// label {label}")
-        self.output.append(f"({self.function_name}${label})")
+        self.output.append(f"({self.file_name}.{self.function_name}${label})")
 
     def write_goto(self, label):
         self.output.append(f"// goto {label}")
         self.output.extend(
             [
-                f"@{self.function_name}${label}",
+                f"@{self.file_name}.{self.function_name}${label}",
                 "0;JMP",
             ]
         )
@@ -567,85 +553,13 @@ class CodeWriter:
                 "A=M",
                 "D=M",
                 # Jump if value is not 0
-                f"@{self.function_name}${label}",
+                f"@{self.file_name}.{self.function_name}${label}",
                 "D;JNE",
             ]
         )
 
     def write_call(self, function_name, num_args):
-        self.output.append(f"// call {function_name} {num_args}")
-        return_address_label = self.new_return_label()
-        self.output.extend(
-            [
-                # push return-address
-                f"@{return_address_label}",
-                "D=A",
-                "@SP",
-                "A=M",
-                "M=D",
-                "@SP",
-                "M=M+1",
-                # push LCL
-                "@LCL",
-                "D=M",
-                "@SP",
-                "A=M",
-                "M=D",
-                "@SP",
-                "M=M+1",
-                # push ARG
-                "@ARG",
-                "D=M",
-                "@SP",
-                "A=M",
-                "M=D",
-                "@SP",
-                "M=M+1",
-                # push THIS
-                "@THIS",
-                "D=M",
-                "@SP",
-                "A=M",
-                "M=D",
-                "@SP",
-                "M=M+1",
-                # push THAT
-                "@THAT",
-                "D=M",
-                "@SP",
-                "A=M",
-                "M=D",
-                "@SP",
-                "M=M+1",
-            ]
-        )
-        self.output.extend(
-            [
-                # ARG = SP-n-5 = SP-(n+5)
-                # d = n+5
-                f"@{int(num_args) + 5}",
-                "D=A",
-                # ARG = SP - d
-                "@SP",
-                "D=M-D",
-                "@ARG",
-                "M=D",
-            ]
-        )
-        self.output.extend(
-            [
-                # LCL = SP
-                "@SP",
-                "D=M",
-                "@LCL",
-                "M=D",
-                # goto f
-                f"@{function_name}",
-                "0;JMP",
-                # (return-address)
-                f"({return_address_label})",
-            ]
-        )
+        pass
 
     def write_return(self):
         self.output.append("// return")
@@ -721,7 +635,7 @@ class CodeWriter:
         self.output.extend(
             [
                 # Declare label
-                f"({self.function_name})",
+                f"({self.file_name}.{self.function_name})",
                 # Put 0 into d
                 "@0",
                 "D=A",

@@ -15,41 +15,12 @@ def translate(filename: Path):
 
     Creates a new file with the extension .asm
     """
-    code_writer = CodeWriter()
-    code_writer.write_init()
-
-    if filename.is_file():
-        _process_file_path(code_writer=code_writer, filename=filename)
-
-        asm_commands = code_writer.get_output()
-        click.echo(asm_commands)
-
-        output_file = filename.with_suffix(".asm")
-        output_file.write_text("\n".join(asm_commands))
-
-    elif filename.is_dir():
-        for f in filename.iterdir():
-            if f.suffix == ".vm":
-                print(f"Translating {f}")
-                _process_file_path(code_writer=code_writer, filename=f)
-            else:
-                print(f"Skipping {f}")
-
-        asm_commands = code_writer.get_output()
-        click.echo(asm_commands)
-
-        output_file = filename / f"{filename.stem}.asm"
-        output_file.write_text("\n".join(asm_commands))
-    else:
-        raise NotImplementedError(f"Unsupported path type {filename}")
-
-
-def _process_file_path(code_writer, filename):
-    code_writer.set_file_name(filename.stem)
-
     vm_commands = filename.read_text().splitlines()
     click.echo(vm_commands)
+
     parser_ = Parser(commands=vm_commands)
+    code_writer = CodeWriter()
+    code_writer.set_file_name(filename.stem)
 
     while parser_.has_more_commands():
         parser_.advance()
@@ -79,10 +50,14 @@ def _process_file_path(code_writer, filename):
                 code_writer.write_function(parser_.arg1(), parser_.arg2())
             case CommandType.C_RETURN:
                 code_writer.write_return()
-            case CommandType.C_CALL:
-                code_writer.write_call(parser_.arg1(), parser_.arg2())
             case _:
                 raise NotImplementedError(f"Unsupported command type {command_type}")
+
+    asm_commands = code_writer.get_output()
+    click.echo(asm_commands)
+
+    output_file = filename.with_suffix(".asm")
+    output_file.write_text("\n".join(asm_commands))
 
 
 if __name__ == "__main__":
