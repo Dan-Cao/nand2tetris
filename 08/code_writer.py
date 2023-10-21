@@ -5,7 +5,9 @@ class CodeWriter:
     def __init__(self):
         self.output = []
         self.file_name = ""
+        self.function_name = ""
         self.label_counter = 0
+        self.return_counter = 0
 
     def get_output(self):
         return self.output
@@ -14,10 +16,16 @@ class CodeWriter:
         self.file_name = file_name
         self.label_counter = 0
 
+    def set_function_name(self, function_name):
+        self.function_name = function_name
+
     def new_label(self):
         label = f"DAN{self.label_counter}DAN"
         self.label_counter += 1
         return label
+
+    def new_return_label(self):
+        pass
 
     def get_static_symbol(self, index):
         return f"@{self.file_name}.{index}"
@@ -523,13 +531,13 @@ class CodeWriter:
 
     def write_label(self, label):
         self.output.append(f"// label {label}")
-        self.output.append(f"({self.file_name}.func_name${label})")
+        self.output.append(f"({self.file_name}.{self.function_name}${label})")
 
     def write_goto(self, label):
         self.output.append(f"// goto {label}")
         self.output.extend(
             [
-                f"@{self.file_name}.func_name${label}",
+                f"@{self.file_name}.{self.function_name}${label}",
                 "0;JMP",
             ]
         )
@@ -545,7 +553,7 @@ class CodeWriter:
                 "A=M",
                 "D=M",
                 # Jump if value is not 0
-                f"@{self.file_name}.func_name${label}",
+                f"@{self.file_name}.{self.function_name}${label}",
                 "D;JNE",
             ]
         )
@@ -554,7 +562,94 @@ class CodeWriter:
         pass
 
     def write_return(self):
-        pass
+        self.output.append("// return")
+        self.output.extend(
+            [
+                # FRAME = LCL; Use R13 for FRAME var, and copy LCL into FRAME
+                "@LCL",
+                "D=M",
+                "@R13",
+                "M=D",
+                # RET = *(FRAME-5); Use R14 for RET var, copy *(FRAME - 5) into RET
+                "A=M-1",
+                "A=A-1",
+                "A=A-1",
+                "A=A-1",
+                "A=A-1",
+                "D=M",
+                "@R14",
+                "M=D",
+                # $ARG = pop(); Reposition return value for caller (copy value from top of stack to ARG)
+                "@SP",
+                "A=M-1",
+                "D=M",
+                "@ARG",
+                "A=M",
+                "M=D",
+                # SP = ARG + 1; store address of ARG + 1 in d, and set SP to d
+                "@ARG",
+                "D=M+1",
+                "@SP",
+                "M=D",
+                # THAT = *(FRAME-1)
+                "@R13",
+                "A=M-1",
+                "D=M",
+                "@THAT",
+                "M=D",
+                # THIS = *(FRAME-2)
+                "@R13",
+                "A=M-1",
+                "A=A-1",
+                "D=M",
+                "@THIS",
+                "M=D",
+                # ARG = *(FRAME-3)
+                "@R13",
+                "A=M-1",
+                "A=A-1",
+                "A=A-1",
+                "D=M",
+                "@ARG",
+                "M=D",
+                # LCL = *(FRAME-4)
+                "@R13",
+                "A=M-1",
+                "A=A-1",
+                "A=A-1",
+                "A=A-1",
+                "D=M",
+                "@LCL",
+                "M=D",
+                # goto RET
+                "@R14",
+                "A=M",
+                "0;JMP",
+            ]
+        )
 
     def write_function(self, function_name, num_locals):
-        pass
+        self.output.append(f"// function {function_name} {num_locals}")
+        self.set_function_name(function_name)
+
+        self.output.extend(
+            [
+                # Declare label
+                f"({self.file_name}.{self.function_name})",
+                # Put 0 into d
+                "@0",
+                "D=A",
+                # Initialise local variables
+                "@LCL",
+                "A=M",
+            ]
+        )
+        self.output.extend(
+            [
+                # Set local variable to 0
+                "M=D",
+                # Go to next local variable
+                "A=A+1",
+            ]
+            * int(num_locals)
+        )
