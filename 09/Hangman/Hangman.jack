@@ -49,7 +49,6 @@ class Hangman {
     }
 
     method void guessChar(char guess) {
-        // Returns if guess was correct
         var int i;
         var boolean matched;
 

@@ -3,7 +3,7 @@ class Main {
     function void main() {
         var Hangman hangman;
 
-        let hangman = Hangman.new("BANANA", 10);
+        let hangman = Hangman.new("BANANA", 7);
 
         do Output.printString("Enter your guess");
         do Output.println();
@@ -20,11 +20,10 @@ class Main {
             }
 
             do Output.printString(" ");
-            do Output.printInt(hangman.getGuessesRemaining());
-            do Output.printString(" ");
-
             do hangman.guessChar(Keyboard.readChar());
             do Output.println();
+
+            do HangmanGraphic.draw(hangman.getGuessesRemaining());
 
         }
 
