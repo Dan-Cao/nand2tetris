@@ -2,7 +2,6 @@
 class Main {
     function void main() {
         var char guess;
-        var String hint;
         var int guessesRemaining;
         var Hangman hangman;
 
@@ -14,9 +13,7 @@ class Main {
         do Output.println();
 
         while (~(guessesRemaining = 0)) {
-            let hint = hangman.makeHintString();
-            do Output.printString(hint);
-            do hint.dispose();
+            do Output.printString(hangman.getHint());
 
             if (hangman.gameWon()) {
                 do Output.println();
@@ -32,7 +29,7 @@ class Main {
             let guess = Keyboard.readChar();
             do Output.println();
 
-            if (~(hangman.updateGuessArray(guess))) {
+            if (~(hangman.tryCharAndCheckIfMatched(guess))) {
                 let guessesRemaining = guessesRemaining - 1;
             }
         }
