@@ -3,10 +3,12 @@ class Hangman {
     field String hint;
     field int secretLength;
     field Array guessedChars;
+    field int guessesRemaining;
 
-    constructor Hangman new(String secretWord){
+    constructor Hangman new(String secretWord, int maxGuesses) {
         let secret = secretWord;
         let secretLength = secret.length();
+        let guessesRemaining = maxGuesses;
 
         do initGuessArray();
         do initHintString();
@@ -14,7 +16,7 @@ class Hangman {
         return this;
     }
 
-    method void initGuessArray(){
+    method void initGuessArray() {
         var int i;
 
         let guessedChars = Array.new(secretLength);
@@ -46,7 +48,7 @@ class Hangman {
         return;
     }
 
-    method boolean tryCharAndCheckIfMatched(char guess){
+    method void guessChar(char guess) {
         // Returns if guess was correct
         var int i;
         var boolean matched;
@@ -64,10 +66,14 @@ class Hangman {
             let i = i + 1;
         }
 
-        return matched;
+        if (~matched) {
+            let guessesRemaining = guessesRemaining - 1;
+        }
+
+        return;
     }
 
-    method boolean gameWon(){
+    method boolean gameWon() {
         var int i;
 
         let i = 0;
@@ -82,7 +88,15 @@ class Hangman {
         return true;
     }
 
-    method String getHint(){
+    method String getHint() {
         return hint;
+    }
+
+    method int getGuessesRemaining() {
+        return guessesRemaining;
+    }
+
+    method boolean gameActive() {
+        return guessesRemaining > 0;
     }
 }
