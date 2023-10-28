@@ -1,0 +1,83 @@
+class Hangman {
+    field String secret;
+    field int secretLength;
+    field Array guessedChars;
+
+    constructor Hangman new(String secretWord){
+        let secret = secretWord;
+        let secretLength = secret.length();
+
+        do makeGuessArray();
+
+        return this;
+    }
+
+    method void makeGuessArray(){
+        var int i;
+
+        let guessedChars = Array.new(secretLength);
+        let i = 0;
+
+        while (i < secretLength){
+            let guessedChars[i] = false;
+            let i = i + 1;
+        }
+
+        return;
+    }
+
+    method String makeHintString() {
+        var String hint;
+        var int i;
+        var String underscore;
+        var char u;
+
+        let underscore = "_";
+        let u = underscore.charAt(0);
+
+        let hint = String.new(secretLength);
+
+        while (i < secretLength) {
+            if (guessedChars[i] = true) {
+                do hint.appendChar(secret.charAt(i));
+            } else {
+                do hint.appendChar(u);
+            }
+            let i = i + 1;
+        }
+        return hint;
+    }
+
+    method boolean updateGuessArray(char guess){
+        var int i;
+        var boolean matched;
+
+        let i = 0;
+        let matched = false;
+
+        while (i < secretLength) {
+            if (secret.charAt(i) = guess) {
+                let guessedChars[i] = true;
+                let matched = true;
+            }
+            let i = i + 1;
+        }
+
+        return matched;
+    }
+
+    method boolean gameWon(){
+        var int i;
+
+        let i = 0;
+
+        while (i < secretLength) {
+            if (guessedChars[i] = false) {
+                return false;
+            }
+            let i = i + 1;
+        }
+
+        return true;
+    }
+}
