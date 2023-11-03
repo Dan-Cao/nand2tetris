@@ -24,3 +24,4 @@ my-venv
 08/fixtures/**/*.out
 08/fixtures/**/*.asm
 09/**/*.vm
+10/**/*_.xml
