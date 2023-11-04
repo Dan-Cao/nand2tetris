@@ -1,4 +1,5 @@
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 import click
 
@@ -30,37 +31,15 @@ def analyze(filename: Path):
 
 def _process_file(filename):
     name = filename.stem
-    output_file = filename.with_name(f"{name}_T").with_suffix(".xml")
+    output_file = filename.with_name(f"{name}_").with_suffix(".xml")
 
     tokenizer = JackTokenizer(filename.read_text())
     compilation_engine = CompilationEngine(tokenizer=tokenizer)
 
-    output = ""
-    output += "<tokens>\n"
-
-    while tokenizer.has_more_tokens():
-        tokenizer.advance()
-
-        match tokenizer.token_type():
-            case TokenType.KEYWORD:
-                output += f"<keyword> {escape(tokenizer.key_word().value)} </keyword>\n"
-            case TokenType.SYMBOL:
-                output += f"<symbol> {escape(tokenizer.symbol())} </symbol>\n"
-            case TokenType.IDENTIFIER:
-                output += (
-                    f"<identifier> {escape(tokenizer.identifier())} </identifier>\n"
-                )
-            case TokenType.INT_CONST:
-                output += (
-                    f"<integerConstant> {tokenizer.int_val()} </integerConstant>\n"
-                )
-            case TokenType.STRING_CONST:
-                output += f"<stringConstant> {escape(tokenizer.string_val())} </stringConstant>\n"
-            case _:
-                raise NotImplementedError("Unknown token type")
-
-    output += "</tokens>\n"
-    output_file.write_text(output)
+    tree = compilation_engine.compile_class()
+    ET.indent(tree)
+    tree_str = ET.tostring(tree, encoding="unicode", short_empty_elements=False)
+    output_file.write_text(tree_str)
 
 
 def escape(token: str):

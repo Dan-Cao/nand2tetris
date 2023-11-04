@@ -69,7 +69,7 @@ class JackTokenizer:
         return len(self._remaining_text) > 0
 
     def advance(self):
-        self._skip_whitespace_and_comments()
+        assert self.has_more_tokens()
 
         if match := KEYWORD_RE.match(self._remaining_text):
             self._current_token = match.group()
