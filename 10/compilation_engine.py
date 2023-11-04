@@ -1,5 +1,4 @@
 import xml.etree.ElementTree as ET
-from enum import Enum
 
 from jack_tokenizer import JackTokenizer, TokenType, Keyword
 
@@ -14,7 +13,7 @@ class CompilationEngine:
             case TokenType.KEYWORD:
                 self._assert(
                     self._tokenizer.key_word() in tokens,
-                    f"Expected one of {tokens}, got {self._tokenizer.current_token()}",
+                    f"Expected one of {tokens}",
                 )
                 e = ET.Element("keyword")
                 e.text = f" {self._tokenizer.key_word().value} "
@@ -23,18 +22,21 @@ class CompilationEngine:
             case TokenType.SYMBOL:
                 self._assert(
                     self._tokenizer.symbol() in tokens,
-                    f"Expected one of {tokens}, got {self._tokenizer.current_token()}",
+                    f"Expected one of {tokens}",
                 )
                 e = ET.Element("symbol")
                 e.text = f" {self._tokenizer.symbol()} "
                 self._tokenizer.advance()
                 return e
             case _:
-                raise JackSyntaxError(f"Expected one of {tokens}. Got {self._tokenizer.current_token()}")
+                raise JackSyntaxError(f"Expected one of {tokens}")
 
     def _assert(self, test, message):
+        # Does assertion on a token
         if not test:
-            raise JackSyntaxError(message)
+            raise JackSyntaxError(
+                f"{message}\nGot '{self._tokenizer.current_token()}' at:\n{self._tokenizer.current_line()}"
+            )
 
     def compile_class(self):
         e = ET.Element("class")
@@ -43,7 +45,7 @@ class CompilationEngine:
 
         self._assert(
             self._tokenizer.token_type() == TokenType.IDENTIFIER,
-            f"class must be followed by identifier. Got {self._tokenizer.current_token()}",
+            "class must be followed by identifier",
         )
         identifier = ET.SubElement(e, "identifier")
         identifier.text = f" {self._tokenizer.identifier()} "
@@ -68,7 +70,7 @@ class CompilationEngine:
         if self._tokenizer.token_type() == TokenType.KEYWORD:
             self._assert(
                 self._tokenizer.key_word() in [Keyword.INT, Keyword.CHAR, Keyword.BOOLEAN],
-                f"Type must be int, char or boolean. Got {self._tokenizer.current_token()}",
+                "Type must be int, char or boolean",
             )
 
             keyword = ET.SubElement(e, "keyword")
@@ -79,11 +81,11 @@ class CompilationEngine:
             identifier.text = f" {self._tokenizer.identifier()} "
             self._tokenizer.advance()
         else:
-            raise JackSyntaxError(f"Type expected in class var declaration. Got {self._tokenizer.current_token()}")
+            raise JackSyntaxError("Type expected in class var declaration")
 
         self._assert(
             self._tokenizer.token_type() == TokenType.IDENTIFIER,
-            f"Identifier must follow type. Got {self._tokenizer.current_token()}",
+            "Identifier must follow type",
         )
         identifier = ET.SubElement(e, "identifier")
         identifier.text = f" {self._tokenizer.identifier()} "
@@ -96,7 +98,7 @@ class CompilationEngine:
 
             self._assert(
                 self._tokenizer.token_type() == TokenType.IDENTIFIER,
-                f"Identifier must follow ',', got {self._tokenizer.token_type()}",
+                f"Identifier must follow ','",
             )
             identifier = ET.SubElement(e, "identifier")
             identifier.text = f" {self._tokenizer.identifier()} "

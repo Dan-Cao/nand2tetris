@@ -118,3 +118,12 @@ class JackTokenizer:
 
     def current_token(self):
         return self._current_token
+
+    def current_line(self):
+        index = len(self.input_text) - len(self._remaining_text)
+        lines = self.input_text.splitlines()
+        count = 0
+        for line in lines:
+            count += len(line)
+            if count > index:
+                return line
