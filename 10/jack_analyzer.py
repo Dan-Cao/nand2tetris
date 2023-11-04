@@ -30,7 +30,7 @@ def analyze(filename: Path):
 
 def _process_file(filename):
     name = filename.stem
-    output_file = filename.with_name(f"{name}_").with_suffix(".xml")
+    output_file = filename.with_name(f"{name}_T").with_suffix(".xml")
 
     tokenizer = JackTokenizer(filename.read_text())
 
@@ -40,30 +40,35 @@ def _process_file(filename):
     while tokenizer.has_more_tokens():
         tokenizer.advance()
 
-        # TODO: escape special XML characters and retest
-
         match tokenizer.token_type():
             case TokenType.KEYWORD:
-                output += f"<keyword> {tokenizer.key_word().value} </keyword>\n"
+                output += f"<keyword> {escape(tokenizer.key_word().value)} </keyword>\n"
             case TokenType.SYMBOL:
-                output += f"<symbol> {tokenizer.symbol()} </symbol>\n"
+                output += f"<symbol> {escape(tokenizer.symbol())} </symbol>\n"
             case TokenType.IDENTIFIER:
-                output += f"<identifier> {tokenizer.identifier()} </identifier>\n"
+                output += (
+                    f"<identifier> {escape(tokenizer.identifier())} </identifier>\n"
+                )
             case TokenType.INT_CONST:
                 output += (
                     f"<integerConstant> {tokenizer.int_val()} </integerConstant>\n"
                 )
             case TokenType.STRING_CONST:
-                output += (
-                    f"<stringConstant> {tokenizer.string_val()} </stringConstant>\n"
-                )
+                output += f"<stringConstant> {escape(tokenizer.string_val())} </stringConstant>\n"
             case _:
                 raise NotImplementedError("Unknown token type")
 
     output += "</tokens>\n"
-
-    print(output)
     output_file.write_text(output)
+
+
+def escape(token: str):
+    return (
+        token.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
 
 
 if __name__ == "__main__":

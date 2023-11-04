@@ -25,3 +25,4 @@ my-venv
 08/fixtures/**/*.asm
 09/**/*.vm
 10/**/*_.xml
+10/**/*_T.xml
