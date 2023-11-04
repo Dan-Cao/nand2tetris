@@ -29,14 +29,17 @@ class CompilationEngine:
                 self._tokenizer.advance()
                 return e
             case _:
-                raise JackSyntaxError(f"Expected one of {tokens}")
+                self._raise_syntax_error(f"Expected one of {tokens}")
 
     def _assert(self, test, message):
         # Does assertion on a token
         if not test:
-            raise JackSyntaxError(
-                f"{message}\nGot '{self._tokenizer.current_token()}' at:\n{self._tokenizer.current_line()}"
-            )
+            self._raise_syntax_error(message)
+
+    def _raise_syntax_error(self, message):
+        raise JackSyntaxError(
+            f"{message}\nGot '{self._tokenizer.current_token()}' at:\n{self._tokenizer.current_line()}"
+        )
 
     def compile_class(self):
         e = ET.Element("class")
@@ -58,30 +61,41 @@ class CompilationEngine:
         ]:
             e.append(self.compile_class_var_dec())
 
-        # TODO: implement subroutine dec
+        while self._tokenizer.token_type() == TokenType.KEYWORD and self._tokenizer.key_word() in [
+            Keyword.CONSTRUCTOR,
+            Keyword.FUNCTION,
+            Keyword.METHOD,
+        ]:
+            e.append(self.compile_subroutine())
+
+        # TODO: remove
         # e.append(self._eat("}"))
 
         return e
 
-    def compile_class_var_dec(self):
-        e = ET.Element("classVarDec")
-        e.append(self._eat(Keyword.STATIC, Keyword.FIELD))
-
+    def _compile_type(self):
         if self._tokenizer.token_type() == TokenType.KEYWORD:
             self._assert(
                 self._tokenizer.key_word() in [Keyword.INT, Keyword.CHAR, Keyword.BOOLEAN],
                 "Type must be int, char or boolean",
             )
-
-            keyword = ET.SubElement(e, "keyword")
+            keyword = ET.Element("keyword")
             keyword.text = f" {self._tokenizer.key_word().value} "
             self._tokenizer.advance()
+            return keyword
         elif self._tokenizer.token_type() == TokenType.IDENTIFIER:
-            identifier = ET.SubElement(e, "identifier")
+            identifier = ET.Element("identifier")
             identifier.text = f" {self._tokenizer.identifier()} "
             self._tokenizer.advance()
+            return identifier
         else:
-            raise JackSyntaxError("Type expected in class var declaration")
+            self._raise_syntax_error("Type expected")
+
+    def compile_class_var_dec(self):
+        e = ET.Element("classVarDec")
+        e.append(self._eat(Keyword.STATIC, Keyword.FIELD))
+
+        e.append(self._compile_type())
 
         self._assert(
             self._tokenizer.token_type() == TokenType.IDENTIFIER,
@@ -108,10 +122,71 @@ class CompilationEngine:
         return e
 
     def compile_subroutine(self):
-        pass
+        e = ET.Element("subroutineDec")
+        e.append(self._eat(Keyword.CONSTRUCTOR, Keyword.FUNCTION, Keyword.METHOD))
+
+        if self._tokenizer.token_type() == TokenType.KEYWORD:
+            self._assert(
+                self._tokenizer.key_word() in [Keyword.VOID, Keyword.INT, Keyword.CHAR, Keyword.BOOLEAN],
+                "Subroutine must have return type",
+            )
+            keyword = ET.SubElement(e, "keyword")
+            keyword.text = f" {self._tokenizer.key_word().value} "
+            self._tokenizer.advance()
+
+        elif self._tokenizer.token_type() == TokenType.IDENTIFIER:
+            identifier = ET.SubElement(e, "identifier")
+            identifier.text = f" {self._tokenizer.identifier()} "
+            self._tokenizer.advance()
+        else:
+            self._raise_syntax_error("Subroutine must have return type")
+
+        self._assert(
+            self._tokenizer.token_type() == TokenType.IDENTIFIER,
+            "Subroutine name expected",
+        )
+        identifier = ET.SubElement(e, "identifier")
+        identifier.text = f" {self._tokenizer.identifier()} "
+        self._tokenizer.advance()
+
+        e.append(self._eat("("))
+        e.append(self.compile_parameter_list())
+        e.append(self._eat(")"))
+
+        e.append(self.compile_subroutine_body())
+        return e
 
     def compile_parameter_list(self):
-        pass
+        e = ET.Element("parameterList")
+
+        if self._tokenizer.token_type() == TokenType.KEYWORD:
+            self._assert(
+                self._tokenizer.key_word() in [Keyword.INT, Keyword.CHAR, Keyword.BOOLEAN],
+                "Type must be int, char or boolean",
+            )
+            keyword = ET.SubElement(e, "keyword")
+            keyword.text = f" {self._tokenizer.key_word().value} "
+            self._tokenizer.advance()
+        elif self._tokenizer.token_type() == TokenType.IDENTIFIER:
+            identifier = ET.SubElement(e, "identifier")
+            identifier.text = f" {self._tokenizer.identifier()} "
+            self._tokenizer.advance()
+        else:
+            return e
+
+        while self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ",":
+            e.append(self._eat(","))
+            e.append(self._compile_type())
+
+        return e
+
+    def compile_subroutine_body(self):
+        e = ET.Element("subroutineBody")
+
+        e.append(self._eat("{"))
+        # TODO
+
+        return e
 
     def compile_var_dec(self):
         pass
