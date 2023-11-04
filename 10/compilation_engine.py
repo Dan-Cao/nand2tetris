@@ -12,25 +12,19 @@ class CompilationEngine:
         # checks current token matches expected
         match self._tokenizer.token_type():
             case TokenType.KEYWORD:
-                assert (
-                    self._tokenizer.key_word() == token
-                ), f"Expected {token}, got {self._tokenizer.key_word()}"
+                assert self._tokenizer.key_word() == token, f"Expected {token}, got {self._tokenizer.key_word()}"
                 self._tokenizer.advance()
                 e = ET.Element("keyword")
                 e.text = f" {token.value} "
                 return e
             case TokenType.SYMBOL:
-                assert (
-                    self._tokenizer.symbol() == token
-                ), f"Expected {token}, got{self._tokenizer.symbol()}"
+                assert self._tokenizer.symbol() == token, f"Expected {token}, got {self._tokenizer.symbol()}"
                 self._tokenizer.advance()
                 e = ET.Element("symbol")
                 e.text = f" {token} "
                 return e
             case _:
-                raise NotImplementedError(
-                    f"Cannot eat token type {self._tokenizer.token_type()}"
-                )
+                raise NotImplementedError(f"Cannot eat token type {self._tokenizer.token_type()}")
 
     def compile_class(self):
         e = ET.Element("class")
@@ -39,7 +33,7 @@ class CompilationEngine:
 
         assert (
             self._tokenizer.token_type() == TokenType.IDENTIFIER
-        ), "class must be followed by identifier"
+        ), f"class must be followed by identifier. Got {self._tokenizer.token_type()}"
         identifier = ET.SubElement(e, "identifier")
         identifier.text = f" {self._tokenizer.identifier()} "
         self._tokenizer.advance()

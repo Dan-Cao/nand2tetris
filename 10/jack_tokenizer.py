@@ -74,33 +74,23 @@ class JackTokenizer:
         if match := KEYWORD_RE.match(self._remaining_text):
             self._current_token = match.group()
             self._current_type = TokenType.KEYWORD
-            self._remaining_text = self._remaining_text.replace(
-                self._current_token, "", 1
-            )
+            self._remaining_text = self._remaining_text.replace(self._current_token, "", 1)
         elif match := SYMBOL_RE.match(self._remaining_text):
             self._current_token = match.group()
             self._current_type = TokenType.SYMBOL
-            self._remaining_text = self._remaining_text.replace(
-                self._current_token, "", 1
-            )
+            self._remaining_text = self._remaining_text.replace(self._current_token, "", 1)
         elif match := INTEGER_CONSTANT_RE.match(self._remaining_text):
             self._current_token = match.group()
             self._current_type = TokenType.INT_CONST
-            self._remaining_text = self._remaining_text.replace(
-                self._current_token, "", 1
-            )
+            self._remaining_text = self._remaining_text.replace(self._current_token, "", 1)
         elif match := STRING_CONSTANT.match(self._remaining_text):
             self._current_token = match.group()
             self._current_type = TokenType.STRING_CONST
-            self._remaining_text = self._remaining_text.replace(
-                self._current_token, "", 1
-            )
+            self._remaining_text = self._remaining_text.replace(self._current_token, "", 1)
         elif match := IDENTIFIER_RE.match(self._remaining_text):
             self._current_token = match.group()
             self._current_type = TokenType.IDENTIFIER
-            self._remaining_text = self._remaining_text.replace(
-                self._current_token, "", 1
-            )
+            self._remaining_text = self._remaining_text.replace(self._current_token, "", 1)
         else:
             raise NotImplementedError(f"Unknown token: {self._remaining_text}")
 

@@ -43,12 +43,7 @@ def _process_file(filename):
 
 
 def escape(token: str):
-    return (
-        token.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
+    return token.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
 if __name__ == "__main__":

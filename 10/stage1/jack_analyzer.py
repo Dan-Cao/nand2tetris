@@ -46,13 +46,9 @@ def _process_file(filename):
             case TokenType.SYMBOL:
                 output += f"<symbol> {escape(tokenizer.symbol())} </symbol>\n"
             case TokenType.IDENTIFIER:
-                output += (
-                    f"<identifier> {escape(tokenizer.identifier())} </identifier>\n"
-                )
+                output += f"<identifier> {escape(tokenizer.identifier())} </identifier>\n"
             case TokenType.INT_CONST:
-                output += (
-                    f"<integerConstant> {tokenizer.int_val()} </integerConstant>\n"
-                )
+                output += f"<integerConstant> {tokenizer.int_val()} </integerConstant>\n"
             case TokenType.STRING_CONST:
                 output += f"<stringConstant> {escape(tokenizer.string_val())} </stringConstant>\n"
             case _:
@@ -63,12 +59,7 @@ def _process_file(filename):
 
 
 def escape(token: str):
-    return (
-        token.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
+    return token.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
 if __name__ == "__main__":
