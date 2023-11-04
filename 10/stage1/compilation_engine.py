@@ -1,9 +1,6 @@
-from jack_tokenizer import JackTokenizer
-
-
 class CompilationEngine:
-    def __init__(self, tokenizer: JackTokenizer):
-        self._tokenizer = tokenizer
+    def __init__(self):
+        pass
 
     def compile_class(self):
         pass

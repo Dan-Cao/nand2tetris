@@ -33,7 +33,6 @@ def _process_file(filename):
     output_file = filename.with_name(f"{name}_T").with_suffix(".xml")
 
     tokenizer = JackTokenizer(filename.read_text())
-    compilation_engine = CompilationEngine(tokenizer=tokenizer)
 
     output = ""
     output += "<tokens>\n"
