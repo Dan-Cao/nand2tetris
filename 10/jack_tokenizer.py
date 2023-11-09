@@ -69,7 +69,10 @@ class JackTokenizer:
         return len(self._remaining_text) > 0
 
     def advance(self):
-        assert self.has_more_tokens()
+        if not self.has_more_tokens():
+            self._current_token = None
+            self._current_type = None
+            return
 
         if match := KEYWORD_RE.match(self._remaining_text):
             self._current_token = match.group()
@@ -121,7 +124,7 @@ class JackTokenizer:
 
     def current_line(self):
         index = len(self.input_text) - len(self._remaining_text)
-        lines = self.input_text.splitlines()
+        lines = self.input_text.splitlines(keepends=True)
         count = 0
         for line in lines:
             count += len(line)

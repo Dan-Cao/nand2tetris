@@ -22,14 +22,14 @@ class CompilationEngine:
             case TokenType.SYMBOL:
                 self._assert(
                     self._tokenizer.symbol() in tokens,
-                    f"Expected one of {tokens}",
+                    f"Expected one of {' '.join(tokens)}",
                 )
                 e = ET.Element("symbol")
                 e.text = f" {self._tokenizer.symbol()} "
                 self._tokenizer.advance()
                 return e
             case _:
-                self._raise_syntax_error(f"Expected one of {tokens}")
+                self._raise_syntax_error(f"Expected one of {' '.join(tokens)}")
 
     def _assert(self, test, message):
         # Does assertion on a token
@@ -68,9 +68,7 @@ class CompilationEngine:
         ]:
             e.append(self.compile_subroutine())
 
-        # TODO: remove
-        # e.append(self._eat("}"))
-
+        e.append(self._eat("}"))
         return e
 
     def _compile_type(self):
@@ -172,11 +170,15 @@ class CompilationEngine:
             identifier.text = f" {self._tokenizer.identifier()} "
             self._tokenizer.advance()
         else:
+            e.text = "\n"  # hacky workaround for output to pass TextCompare check
             return e
+
+        e.append(self._compile_identifier("variable identifier expected"))
 
         while self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ",":
             e.append(self._eat(","))
             e.append(self._compile_type())
+            e.append(self._compile_identifier("parameter name expected"))
 
         return e
 
@@ -184,39 +186,163 @@ class CompilationEngine:
         e = ET.Element("subroutineBody")
 
         e.append(self._eat("{"))
-        # TODO
 
+        while self._tokenizer.token_type() == TokenType.KEYWORD and self._tokenizer.key_word() == Keyword.VAR:
+            e.append(self.compile_var_dec())
+
+        e.append(self.compile_statements())
+        e.append(self._eat("}"))
         return e
 
     def compile_var_dec(self):
-        pass
+        e = ET.Element("varDec")
+
+        e.append(self._eat(Keyword.VAR))
+        e.append(self._compile_type())
+
+        e.append(self._compile_identifier("variable identifier expected"))
+
+        while self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ",":
+            self._eat(",")
+            e.append(self._compile_identifier("variable identifier expected"))
+
+        e.append(self._eat(";"))
+
+        return e
+
+    def _compile_identifier(self, help_text):
+        self._assert(self._tokenizer.token_type() == TokenType.IDENTIFIER, help_text)
+        identifier = ET.Element("identifier")
+        identifier.text = f" {self._tokenizer.identifier()} "
+        self._tokenizer.advance()
+        return identifier
 
     def compile_statements(self):
-        pass
+        e = ET.Element("statements")
+
+        if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == "}":
+            e.text = "\n"  # hacky workaround for output to pass TextCompare check
+            return e
+
+        while not (self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == "}"):
+            self._assert(self._tokenizer.token_type() == TokenType.KEYWORD, "Start of statement expected")
+
+            match self._tokenizer.key_word():
+                case Keyword.LET:
+                    e.append(self.compile_let())
+                case Keyword.IF:
+                    e.append(self.compile_if())
+                case Keyword.WHILE:
+                    e.append(self.compile_while())
+                case Keyword.DO:
+                    e.append(self.compile_do())
+                case Keyword.RETURN:
+                    e.append(self.compile_return())
+                case _:
+                    self._raise_syntax_error(f"Unexpected {self._tokenizer.key_word()} at start of statement")
+        return e
 
     def compile_do(self):
-        pass
+        e = ET.Element("doStatement")
+        e.append(self._eat(Keyword.DO))
+        e.append(self._compile_identifier("class or subroutine identifier expected"))
+
+        if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ".":
+            e.append(self._eat("."))
+            e.append(self._compile_identifier("class method identifier expected"))
+
+        e.append(self._eat("("))
+        e.append(self.compile_expression_list())
+        e.append(self._eat(")"))
+
+        e.append(self._eat(";"))
+        return e
 
     def compile_let(self):
-        pass
+        e = ET.Element("letStatement")
+        e.append(self._eat(Keyword.LET))
+        e.append(self._compile_identifier("variable name expected"))
+
+        if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == "[":
+            e.append(self._eat("["))
+            e.append(self.compile_expression())
+            e.append(self._eat("]"))
+
+        e.append(self._eat("="))
+        e.append(self.compile_expression())
+        e.append(self._eat(";"))
+        return e
 
     def compile_while(self):
-        pass
+        e = ET.Element("whileStatement")
+        e.append(self._eat(Keyword.WHILE))
+        e.append(self._eat("("))
+        e.append(self.compile_expression())
+        e.append(self._eat(")"))
+        e.append(self._eat("{"))
+        e.append(self.compile_statements())
+        e.append(self._eat("}"))
+        return e
 
     def compile_return(self):
-        pass
+        e = ET.Element("returnStatement")
+        e.append(self._eat(Keyword.RETURN))
+
+        if not (self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ";"):
+            e.append(self.compile_expression())
+        e.append(self._eat(";"))
+
+        return e
 
     def compile_if(self):
-        pass
+        e = ET.Element("ifStatement")
+        e.append(self._eat(Keyword.IF))
+        e.append(self._eat("("))
+        e.append(self.compile_expression())
+        e.append(self._eat(")"))
+        e.append(self._eat("{"))
+        e.append(self.compile_statements())
+        e.append(self._eat("}"))
+
+        if self._tokenizer.token_type() == TokenType.KEYWORD and self._tokenizer.key_word() == Keyword.ELSE:
+            e.append(self._eat(Keyword.ELSE))
+            e.append(self._eat("{"))
+            e.append(self.compile_statements())
+            e.append(self._eat("}"))
+        return e
 
     def compile_expression(self):
-        pass
+        e = ET.Element("expression")
+        e.append(self.compile_term())
+
+        # TODO - implement op and additional term
+        return e
 
     def compile_term(self):
-        pass
+        e = ET.Element("term")
+
+        # TODO: implement support for expressions
+        match self._tokenizer.token_type():
+            case TokenType.KEYWORD:
+                e.append(self._eat(Keyword.TRUE, Keyword.FALSE, Keyword.NULL, Keyword.THIS))
+            case TokenType.IDENTIFIER:
+                e.append(self._compile_identifier("identifier expected"))
+            case _:
+                raise self._raise_syntax_error("Do not know how to handle this term yet")
+
+        return e
 
     def compile_expression_list(self):
-        pass
+        e = ET.Element("expressionList")
+        if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ")":
+            e.text = "\n"  # hacky workaround for output to pass TextCompare check
+            return e
+
+        e.append(self.compile_expression())
+        while self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ",":
+            e.append(self._eat(","))
+            e.append(self.compile_expression())
+        return e
 
 
 class JackSyntaxError(Exception):
