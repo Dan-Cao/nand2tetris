@@ -203,7 +203,7 @@ class CompilationEngine:
         e.append(self._compile_identifier("variable identifier expected"))
 
         while self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ",":
-            self._eat(",")
+            e.append(self._eat(","))
             e.append(self._compile_identifier("variable identifier expected"))
 
         e.append(self._eat(";"))
@@ -315,18 +315,62 @@ class CompilationEngine:
         e = ET.Element("expression")
         e.append(self.compile_term())
 
-        # TODO - implement op and additional term
+        if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() in "+-*/&|<>=":
+            op = ET.SubElement(e, "symbol")
+            op.text = f" {self._tokenizer.symbol()} "
+            self._tokenizer.advance()
+
+            e.append(self.compile_term())
+
         return e
 
     def compile_term(self):
         e = ET.Element("term")
 
-        # TODO: implement support for expressions
         match self._tokenizer.token_type():
-            case TokenType.KEYWORD:
+            case TokenType.INT_CONST:
+                int_const = ET.SubElement(e, "integerConstant")
+                int_const.text = f" {self._tokenizer.int_val()} "
+                self._tokenizer.advance()
+            case TokenType.STRING_CONST:
+                str_const = ET.SubElement(e, "stringConstant")
+                str_const.text = f" {self._tokenizer.string_val()} "
+                self._tokenizer.advance()
+            case TokenType.KEYWORD if self._tokenizer.key_word() in [
+                Keyword.TRUE,
+                Keyword.FALSE,
+                Keyword.NULL,
+                Keyword.THIS,
+            ]:
                 e.append(self._eat(Keyword.TRUE, Keyword.FALSE, Keyword.NULL, Keyword.THIS))
+            case TokenType.SYMBOL if self._tokenizer.symbol() in "-~":
+                e.append(self._eat("-", "~"))
+                e.append(self.compile_term())
+            case TokenType.SYMBOL if self._tokenizer.symbol() == "(":
+                e.append(self._eat("("))
+                e.append(self.compile_expression())
+                e.append(self._eat(")"))
             case TokenType.IDENTIFIER:
                 e.append(self._compile_identifier("identifier expected"))
+
+                # array
+                if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == "[":
+                    e.append(self._eat("["))
+                    e.append(self.compile_expression())
+                    e.append(self._eat("]"))
+                # function call
+                elif self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == "(":
+                    e.append(self._eat("("))
+                    e.append(self.compile_expression_list())
+                    e.append(self._eat(")"))
+                # method call
+                elif self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ".":
+                    e.append(self._eat("."))
+                    e.append(self._compile_identifier("function name expected"))
+                    e.append(self._eat("("))
+                    e.append(self.compile_expression_list())
+                    e.append(self._eat(")"))
+
             case _:
                 raise self._raise_syntax_error("Do not know how to handle this term yet")
 
