@@ -9,7 +9,7 @@ from jack_tokenizer import JackTokenizer, TokenType
 
 @click.command()
 @click.argument("filename", type=click.Path(exists=True, path_type=Path))
-def analyze(filename: Path):
+def compile_(filename: Path):
     """
     Translate Jack source into VM commands
     """
@@ -47,4 +47,4 @@ def escape(token: str):
 
 
 if __name__ == "__main__":
-    analyze()
+    compile_()

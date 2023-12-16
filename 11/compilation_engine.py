@@ -1,11 +1,13 @@
 import xml.etree.ElementTree as ET
 
 from jack_tokenizer import JackTokenizer, TokenType, Keyword
+from symbol_table import SymbolTable
 
 
 class CompilationEngine:
     def __init__(self, tokenizer: JackTokenizer):
         self._tokenizer = tokenizer
+        self._symbol_table = SymbolTable()
 
     def _eat(self, *tokens):
         # checks current token matches expected
@@ -16,7 +18,7 @@ class CompilationEngine:
                     f"Expected one of {tokens}",
                 )
                 e = ET.Element("keyword")
-                e.text = f" {self._tokenizer.key_word().value} "
+                e.text = self._tokenizer.key_word().value
                 self._tokenizer.advance()
                 return e
             case TokenType.SYMBOL:
@@ -25,7 +27,7 @@ class CompilationEngine:
                     f"Expected one of {' '.join(tokens)}",
                 )
                 e = ET.Element("symbol")
-                e.text = f" {self._tokenizer.symbol()} "
+                e.text = self._tokenizer.symbol()
                 self._tokenizer.advance()
                 return e
             case _:
@@ -91,21 +93,29 @@ class CompilationEngine:
 
     def compile_class_var_dec(self):
         e = ET.Element("classVarDec")
-        e.append(self._eat(Keyword.STATIC, Keyword.FIELD))
 
-        e.append(self._compile_type())
+        kind = self._eat(Keyword.STATIC, Keyword.FIELD)
+        e.append(kind)
+
+        type_ = self._compile_type()
+        e.append(type_)
 
         self._assert(
             self._tokenizer.token_type() == TokenType.IDENTIFIER,
             "Identifier must follow type",
         )
         identifier = ET.SubElement(e, "identifier")
-        identifier.text = f" {self._tokenizer.identifier()} "
+        identifier.text = self._tokenizer.identifier()
+
+        self._symbol_table.define(name=identifier.text, type_=type_.text, kind=kind.text)
+        identifier.attrib.update(
+            {"category": kind.text, "index": str(self._symbol_table.index_of(identifier.text)), "usage": "declared"}
+        )
         self._tokenizer.advance()
 
         while self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ",":
             symbol = ET.SubElement(e, "symbol")
-            symbol.text = f" {self._tokenizer.symbol()} "
+            symbol.text = ","
             self._tokenizer.advance()
 
             self._assert(
@@ -113,13 +123,19 @@ class CompilationEngine:
                 f"Identifier must follow ','",
             )
             identifier = ET.SubElement(e, "identifier")
-            identifier.text = f" {self._tokenizer.identifier()} "
+            identifier.text = self._tokenizer.identifier()
+            self._symbol_table.define(name=identifier.text, type_=type_.text, kind=kind.text)
+            identifier.attrib.update(
+                {"category": kind.text, "index": str(self._symbol_table.index_of(identifier.text)), "usage": "declared"}
+            )
             self._tokenizer.advance()
 
         e.append(self._eat(";"))
         return e
 
     def compile_subroutine(self):
+        self._symbol_table.start_subroutine()
+
         e = ET.Element("subroutineDec")
         e.append(self._eat(Keyword.CONSTRUCTOR, Keyword.FUNCTION, Keyword.METHOD))
 
