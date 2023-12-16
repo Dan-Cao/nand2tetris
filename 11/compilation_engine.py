@@ -80,12 +80,13 @@ class CompilationEngine:
                 "Type must be int, char or boolean",
             )
             keyword = ET.Element("keyword")
-            keyword.text = f" {self._tokenizer.key_word().value} "
+            keyword.text = self._tokenizer.key_word().value
             self._tokenizer.advance()
             return keyword
         elif self._tokenizer.token_type() == TokenType.IDENTIFIER:
             identifier = ET.Element("identifier")
-            identifier.text = f" {self._tokenizer.identifier()} "
+            identifier.text = self._tokenizer.identifier()
+            identifier.attrib.update({"category": "class", "usage": "used"})
             self._tokenizer.advance()
             return identifier
         else:
