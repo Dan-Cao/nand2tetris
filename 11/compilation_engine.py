@@ -313,7 +313,15 @@ class CompilationEngine:
     def compile_let(self):
         e = ET.Element("letStatement")
         e.append(self._eat(Keyword.LET))
-        e.append(self._compile_identifier("variable name expected"))
+        identifier = self._compile_identifier("variable name expected")
+        e.append(identifier)
+        identifier.attrib.update(
+            {
+                "category": self._symbol_table.kind_of(identifier.text),
+                "index": str(self._symbol_table.index_of(identifier.text)),
+                "usage": "used",
+            }
+        )
 
         if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == "[":
             e.append(self._eat("["))
@@ -403,25 +411,46 @@ class CompilationEngine:
                 e.append(self.compile_expression())
                 e.append(self._eat(")"))
             case TokenType.IDENTIFIER:
-                e.append(self._compile_identifier("identifier expected"))
+                identifier1 = self._compile_identifier("identifier expected")
+                e.append(identifier1)
 
                 # array
                 if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == "[":
                     e.append(self._eat("["))
                     e.append(self.compile_expression())
                     e.append(self._eat("]"))
+                    identifier1.attrib.update(
+                        {
+                            "category": self._symbol_table.kind_of(identifier1.text),
+                            "index": str(self._symbol_table.index_of(identifier1.text)),
+                            "usage": "used",
+                        }
+                    )
                 # function call
                 elif self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == "(":
                     e.append(self._eat("("))
                     e.append(self.compile_expression_list())
                     e.append(self._eat(")"))
+                    identifier1.attrib.update({"category": "subroutine", "usage": "used"})
                 # method call
                 elif self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ".":
                     e.append(self._eat("."))
-                    e.append(self._compile_identifier("function name expected"))
+                    identifier2 = self._compile_identifier("function name expected")
+                    e.append(identifier2)
                     e.append(self._eat("("))
                     e.append(self.compile_expression_list())
                     e.append(self._eat(")"))
+
+                    identifier1.attrib.update({"category": "class", "usage": "used"})
+                    identifier2.attrib.update({"category": "subroutine", "usage": "used"})
+                else:
+                    identifier1.attrib.update(
+                        {
+                            "category": self._symbol_table.kind_of(identifier1.text),
+                            "index": str(self._symbol_table.index_of(identifier1.text)),
+                            "usage": "used",
+                        }
+                    )
 
             case _:
                 raise self._raise_syntax_error("Do not know how to handle this term yet")
