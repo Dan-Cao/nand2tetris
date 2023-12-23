@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 import click
 
 from compilation_engine import CompilationEngine
-from jack_tokenizer import JackTokenizer, TokenType
+from jack_tokenizer import JackTokenizer
 
 
 @click.command()
@@ -31,7 +31,7 @@ def compile_(filename: Path):
 
 def _process_file(filename):
     name = filename.stem
-    output_file = filename.with_name(f"{name}_").with_suffix(".xml")
+    output_xml_file = filename.with_name(f"{name}_").with_suffix(".xml")
 
     tokenizer = JackTokenizer(filename.read_text())
     compilation_engine = CompilationEngine(tokenizer=tokenizer)
@@ -39,11 +39,10 @@ def _process_file(filename):
     tree = compilation_engine.compile_class()
     ET.indent(tree)
     tree_str = ET.tostring(tree, encoding="unicode", short_empty_elements=True)
-    output_file.write_text(tree_str)
+    output_xml_file.write_text(tree_str)
 
-
-def escape(token: str):
-    return token.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+    output_asm_file = filename.with_suffix(".asm")
+    output_asm_file.write_text("\n".join(compilation_engine.get_vm_commands()))
 
 
 if __name__ == "__main__":

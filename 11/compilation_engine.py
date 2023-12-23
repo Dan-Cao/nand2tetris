@@ -2,12 +2,17 @@ import xml.etree.ElementTree as ET
 
 from jack_tokenizer import JackTokenizer, TokenType, Keyword
 from symbol_table import SymbolTable, Kind
+from vm_writer import VMWriter
 
 
 class CompilationEngine:
     def __init__(self, tokenizer: JackTokenizer):
         self._tokenizer = tokenizer
         self._symbol_table = SymbolTable()
+        self._vm_writer = VMWriter()
+
+    def get_vm_commands(self):
+        return self._vm_writer.get_vm_commands()
 
     def _eat(self, *tokens):
         # checks current token matches expected
