@@ -458,8 +458,15 @@ class CompilationEngine:
             ]:
                 e.append(self._eat(Keyword.TRUE, Keyword.FALSE, Keyword.NULL, Keyword.THIS))
             case TokenType.SYMBOL if self._tokenizer.symbol() in "-~":
+                op = self._tokenizer.symbol()
                 e.append(self._eat("-", "~"))
                 e.append(self.compile_term())
+                if op == "-":
+                    self._vm_writer.write_arithmetic(command=ArithmeticCommand.NEG)
+                elif op == "~":
+                    self._vm_writer.write_arithmetic(command=ArithmeticCommand.NOT)
+                else:
+                    raise NotImplementedError(f"Unknown operator {op}")
             case TokenType.SYMBOL if self._tokenizer.symbol() == "(":
                 e.append(self._eat("("))
                 e.append(self.compile_expression())
