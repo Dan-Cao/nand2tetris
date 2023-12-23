@@ -297,11 +297,18 @@ class CompilationEngine:
     def compile_do(self):
         e = ET.Element("doStatement")
         e.append(self._eat(Keyword.DO))
-        e.append(self._compile_identifier("class or subroutine identifier expected"))
+        identifier1 = self._compile_identifier("class or subroutine identifier expected")
+        e.append(identifier1)
 
         if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ".":
             e.append(self._eat("."))
-            e.append(self._compile_identifier("class method identifier expected"))
+            identifier2 = self._compile_identifier("class method identifier expected")
+            e.append(identifier2)
+
+            identifier1.attrib.update({"category": "class", "usage": "used"})
+            identifier2.attrib.update({"category": "subroutine", "usage": "used"})
+        else:
+            identifier1.attrib.update({"category": "subroutine", "usage": "used"})
 
         e.append(self._eat("("))
         e.append(self.compile_expression_list())
