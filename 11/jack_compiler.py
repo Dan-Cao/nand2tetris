@@ -41,7 +41,7 @@ def _process_file(filename):
     tree_str = ET.tostring(tree, encoding="unicode", short_empty_elements=True)
     output_xml_file.write_text(tree_str)
 
-    output_asm_file = filename.with_suffix(".asm")
+    output_asm_file = filename.with_suffix(".vm")
     output_asm_file.write_text("\n".join(compilation_engine.get_vm_commands()))
 
 

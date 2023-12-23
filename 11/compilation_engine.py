@@ -2,7 +2,7 @@ import xml.etree.ElementTree as ET
 
 from jack_tokenizer import JackTokenizer, TokenType, Keyword
 from symbol_table import SymbolTable, Kind
-from vm_writer import VMWriter
+from vm_writer import VMWriter, Segment, ArithmeticCommand
 
 
 class CompilationEngine:
@@ -60,6 +60,7 @@ class CompilationEngine:
         identifier = ET.SubElement(e, "identifier")
         identifier.text = self._tokenizer.identifier()
         identifier.attrib.update({"category": "class", "usage": "declared"})
+        class_name = identifier.text
         self._tokenizer.advance()
 
         e.append(self._eat("{"))
@@ -74,7 +75,7 @@ class CompilationEngine:
             Keyword.FUNCTION,
             Keyword.METHOD,
         ]:
-            e.append(self.compile_subroutine())
+            e.append(self.compile_subroutine(class_name=class_name))
 
         e.append(self._eat("}"))
         return e
@@ -140,7 +141,7 @@ class CompilationEngine:
         e.append(self._eat(";"))
         return e
 
-    def compile_subroutine(self):
+    def compile_subroutine(self, class_name):
         self._symbol_table.start_subroutine()
 
         e = ET.Element("subroutineDec")
@@ -170,13 +171,14 @@ class CompilationEngine:
         identifier = ET.SubElement(e, "identifier")
         identifier.text = self._tokenizer.identifier()
         identifier.attrib.update({"category": "subroutine", "usage": "declared"})
+        subroutine_name = identifier.text
         self._tokenizer.advance()
 
         e.append(self._eat("("))
         e.append(self.compile_parameter_list())
         e.append(self._eat(")"))
 
-        e.append(self.compile_subroutine_body())
+        e.append(self.compile_subroutine_body(class_name=class_name, subroutine_name=subroutine_name))
         return e
 
     def compile_parameter_list(self):
@@ -227,7 +229,7 @@ class CompilationEngine:
 
         return e
 
-    def compile_subroutine_body(self):
+    def compile_subroutine_body(self, class_name, subroutine_name):
         e = ET.Element("subroutineBody")
 
         e.append(self._eat("{"))
@@ -235,7 +237,11 @@ class CompilationEngine:
         while self._tokenizer.token_type() == TokenType.KEYWORD and self._tokenizer.key_word() == Keyword.VAR:
             e.append(self.compile_var_dec())
 
-        e.append(self.compile_statements())
+        self._vm_writer.write_function(
+            name=f"{class_name}.{subroutine_name}", n_locals=self._symbol_table.var_count(Kind.VAR)
+        )
+
+        e.append(self.compile_statements(class_name=class_name))
         e.append(self._eat("}"))
         return e
 
@@ -274,7 +280,7 @@ class CompilationEngine:
         self._tokenizer.advance()
         return identifier
 
-    def compile_statements(self):
+    def compile_statements(self, class_name):
         e = ET.Element("statements")
 
         if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == "}":
@@ -288,18 +294,18 @@ class CompilationEngine:
                 case Keyword.LET:
                     e.append(self.compile_let())
                 case Keyword.IF:
-                    e.append(self.compile_if())
+                    e.append(self.compile_if(class_name=class_name))
                 case Keyword.WHILE:
-                    e.append(self.compile_while())
+                    e.append(self.compile_while(class_name=class_name))
                 case Keyword.DO:
-                    e.append(self.compile_do())
+                    e.append(self.compile_do(class_name=class_name))
                 case Keyword.RETURN:
                     e.append(self.compile_return())
                 case _:
                     self._raise_syntax_error(f"Unexpected {self._tokenizer.key_word()} at start of statement")
         return e
 
-    def compile_do(self):
+    def compile_do(self, class_name):
         e = ET.Element("doStatement")
         e.append(self._eat(Keyword.DO))
         identifier1 = self._compile_identifier("class or subroutine identifier expected")
@@ -312,14 +318,22 @@ class CompilationEngine:
 
             identifier1.attrib.update({"category": "class", "usage": "used"})
             identifier2.attrib.update({"category": "subroutine", "usage": "used"})
+
+            full_name = f"{identifier1.text}.{identifier2.text}"
         else:
             identifier1.attrib.update({"category": "subroutine", "usage": "used"})
+            full_name = f"{class_name.text}.{identifier1.text}"
 
         e.append(self._eat("("))
-        e.append(self.compile_expression_list())
+        expression_list = self.compile_expression_list()
+        expression_count = int(expression_list.attrib["count"])
+        e.append(expression_list)
         e.append(self._eat(")"))
 
         e.append(self._eat(";"))
+
+        self._vm_writer.write_call(name=full_name, n_args=expression_count)
+        self._vm_writer.write_pop(segment=Segment.TEMP, index=0)
         return e
 
     def compile_let(self):
@@ -345,14 +359,14 @@ class CompilationEngine:
         e.append(self._eat(";"))
         return e
 
-    def compile_while(self):
+    def compile_while(self, class_name):
         e = ET.Element("whileStatement")
         e.append(self._eat(Keyword.WHILE))
         e.append(self._eat("("))
         e.append(self.compile_expression())
         e.append(self._eat(")"))
         e.append(self._eat("{"))
-        e.append(self.compile_statements())
+        e.append(self.compile_statements(class_name=class_name))
         e.append(self._eat("}"))
         return e
 
@@ -362,24 +376,27 @@ class CompilationEngine:
 
         if not (self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ";"):
             e.append(self.compile_expression())
+        else:
+            self._vm_writer.write_push(segment=Segment.CONST, index=0)
         e.append(self._eat(";"))
 
+        self._vm_writer.write_return()
         return e
 
-    def compile_if(self):
+    def compile_if(self, class_name):
         e = ET.Element("ifStatement")
         e.append(self._eat(Keyword.IF))
         e.append(self._eat("("))
         e.append(self.compile_expression())
         e.append(self._eat(")"))
         e.append(self._eat("{"))
-        e.append(self.compile_statements())
+        e.append(self.compile_statements(class_name=class_name))
         e.append(self._eat("}"))
 
         if self._tokenizer.token_type() == TokenType.KEYWORD and self._tokenizer.key_word() == Keyword.ELSE:
             e.append(self._eat(Keyword.ELSE))
             e.append(self._eat("{"))
-            e.append(self.compile_statements())
+            e.append(self.compile_statements(class_name=class_name))
             e.append(self._eat("}"))
         return e
 
@@ -389,10 +406,33 @@ class CompilationEngine:
 
         if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() in "+-*/&|<>=":
             op = ET.SubElement(e, "symbol")
-            op.text = f" {self._tokenizer.symbol()} "
+            op.text = self._tokenizer.symbol()
             self._tokenizer.advance()
+            symbol = op.text
 
             e.append(self.compile_term())
+
+            match symbol:
+                case "+":
+                    self._vm_writer.write_arithmetic(command=ArithmeticCommand.ADD)
+                case "-":
+                    self._vm_writer.write_arithmetic(command=ArithmeticCommand.SUB)
+                case "*":
+                    self._vm_writer.write_call(name="Math.multiply", n_args=2)
+                case "/":
+                    self._vm_writer.write_call(name="Math.divide", n_args=2)
+                case "&":
+                    self._vm_writer.write_arithmetic(command=ArithmeticCommand.AND)
+                case "|":
+                    self._vm_writer.write_arithmetic(command=ArithmeticCommand.OR)
+                case "<":
+                    self._vm_writer.write_arithmetic(command=ArithmeticCommand.LT)
+                case ">":
+                    self._vm_writer.write_arithmetic(command=ArithmeticCommand.GT)
+                case "=":
+                    self._vm_writer.write_arithmetic(command=ArithmeticCommand.EQ)
+                case _ as operator:
+                    raise NotImplementedError(f"Unknown operator {operator}")
 
         return e
 
@@ -402,7 +442,9 @@ class CompilationEngine:
         match self._tokenizer.token_type():
             case TokenType.INT_CONST:
                 int_const = ET.SubElement(e, "integerConstant")
-                int_const.text = f" {self._tokenizer.int_val()} "
+                int_val = self._tokenizer.int_val()
+                int_const.text = str(int_val)
+                self._vm_writer.write_push(segment=Segment.CONST, index=int_val)
                 self._tokenizer.advance()
             case TokenType.STRING_CONST:
                 str_const = ET.SubElement(e, "stringConstant")
@@ -471,14 +513,17 @@ class CompilationEngine:
 
     def compile_expression_list(self):
         e = ET.Element("expressionList")
+        e.attrib.update({"count": "0"})
         if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ")":
-            e.text = "\n"  # hacky workaround for output to pass TextCompare check
             return e
 
         e.append(self.compile_expression())
+        expression_count = 1
         while self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ",":
             e.append(self._eat(","))
             e.append(self.compile_expression())
+            expression_count += 1
+        e.attrib.update({"count": str(expression_count)})
         return e
 
 
