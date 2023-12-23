@@ -1,7 +1,7 @@
 import xml.etree.ElementTree as ET
 
 from jack_tokenizer import JackTokenizer, TokenType, Keyword
-from symbol_table import SymbolTable
+from symbol_table import SymbolTable, Kind
 
 
 class CompilationEngine:
@@ -109,7 +109,7 @@ class CompilationEngine:
         identifier = ET.SubElement(e, "identifier")
         identifier.text = self._tokenizer.identifier()
 
-        self._symbol_table.define(name=identifier.text, type_=type_.text, kind=kind.text)
+        self._symbol_table.define(name=identifier.text, type_=type_.text, kind=Kind(kind.text))
         identifier.attrib.update(
             {"category": kind.text, "index": str(self._symbol_table.index_of(identifier.text)), "usage": "declared"}
         )
@@ -126,7 +126,7 @@ class CompilationEngine:
             )
             identifier = ET.SubElement(e, "identifier")
             identifier.text = self._tokenizer.identifier()
-            self._symbol_table.define(name=identifier.text, type_=type_.text, kind=kind.text)
+            self._symbol_table.define(name=identifier.text, type_=type_.text, kind=Kind(kind.text))
             identifier.attrib.update(
                 {"category": kind.text, "index": str(self._symbol_table.index_of(identifier.text)), "usage": "declared"}
             )
@@ -201,7 +201,7 @@ class CompilationEngine:
 
         identifier = self._compile_identifier("variable identifier expected")
         e.append(identifier)
-        self._symbol_table.define(name=identifier.text, type_=parameter_type, kind="arg")
+        self._symbol_table.define(name=identifier.text, type_=parameter_type, kind=Kind.ARG)
         identifier.attrib.update(
             {"category": "arg", "usage": "declared", "index": str(self._symbol_table.index_of(identifier.text))}
         )
@@ -215,7 +215,7 @@ class CompilationEngine:
             identifier = self._compile_identifier("parameter name expected")
             e.append(identifier)
 
-            self._symbol_table.define(name=identifier.text, type_=parameter_type.text, kind="arg")
+            self._symbol_table.define(name=identifier.text, type_=parameter_type.text, kind=Kind.ARG)
             identifier.attrib.update(
                 {"category": "arg", "usage": "declared", "index": str(self._symbol_table.index_of(identifier.text))}
             )
@@ -244,7 +244,7 @@ class CompilationEngine:
         identifier = self._compile_identifier("variable identifier expected")
         e.append(identifier)
 
-        self._symbol_table.define(name=identifier.text, type_=var_type.text, kind="var")
+        self._symbol_table.define(name=identifier.text, type_=var_type.text, kind=Kind.VAR)
         identifier.attrib.update(
             {"category": "local", "usage": "declared", "index": str(self._symbol_table.index_of(identifier.text))}
         )
@@ -253,7 +253,7 @@ class CompilationEngine:
             e.append(self._eat(","))
             identifier = self._compile_identifier("variable identifier expected")
             e.append(identifier)
-            self._symbol_table.define(name=identifier.text, type_=var_type.text, kind="var")
+            self._symbol_table.define(name=identifier.text, type_=var_type.text, kind=Kind.VAR)
             identifier.attrib.update(
                 {"category": "local", "usage": "declared", "index": str(self._symbol_table.index_of(identifier.text))}
             )

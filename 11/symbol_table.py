@@ -16,11 +16,10 @@ class SymbolTable:
     def start_subroutine(self):
         self._subroutine_symbols = {"arg": {}, "var": {}}
 
-    def define(self, name: str, type_: str, kind: str):
+    def define(self, name: str, type_: str, kind: Kind):
         if self.kind_of(name):
             raise Exception(f"Symbol {name} is already defined")
 
-        kind = Kind(kind)
         index = self.var_count(kind)
 
         match kind:
