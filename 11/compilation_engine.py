@@ -180,22 +180,42 @@ class CompilationEngine:
                 "Type must be int, char or boolean",
             )
             keyword = ET.SubElement(e, "keyword")
-            keyword.text = f" {self._tokenizer.key_word().value} "
+            keyword.text = self._tokenizer.key_word().value
             self._tokenizer.advance()
+
+            parameter_type = keyword.text
+
         elif self._tokenizer.token_type() == TokenType.IDENTIFIER:
             identifier = ET.SubElement(e, "identifier")
-            identifier.text = f" {self._tokenizer.identifier()} "
+            identifier.text = self._tokenizer.identifier()
+            identifier.attrib.update({"category": "class", "usage": "used"})
             self._tokenizer.advance()
+
+            parameter_type = identifier.text
+
         else:
-            e.text = "\n"  # hacky workaround for output to pass TextCompare check
             return e
 
-        e.append(self._compile_identifier("variable identifier expected"))
+        identifier = self._compile_identifier("variable identifier expected")
+        e.append(identifier)
+        self._symbol_table.define(name=identifier.text, type_=parameter_type, kind="arg")
+        identifier.attrib.update(
+            {"category": "arg", "usage": "declared", "index": str(self._symbol_table.index_of(identifier.text))}
+        )
 
         while self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ",":
             e.append(self._eat(","))
-            e.append(self._compile_type())
-            e.append(self._compile_identifier("parameter name expected"))
+
+            parameter_type = self._compile_type()
+            e.append(parameter_type)
+
+            identifier = self._compile_identifier("parameter name expected")
+            e.append(identifier)
+
+            self._symbol_table.define(name=identifier.text, type_=parameter_type.text, kind="arg")
+            identifier.attrib.update(
+                {"category": "arg", "usage": "declared", "index": str(self._symbol_table.index_of(identifier.text))}
+            )
 
         return e
 
@@ -230,7 +250,7 @@ class CompilationEngine:
     def _compile_identifier(self, help_text):
         self._assert(self._tokenizer.token_type() == TokenType.IDENTIFIER, help_text)
         identifier = ET.Element("identifier")
-        identifier.text = f" {self._tokenizer.identifier()} "
+        identifier.text = self._tokenizer.identifier()
         self._tokenizer.advance()
         return identifier
 

@@ -16,12 +16,12 @@ class SymbolTable:
     def start_subroutine(self):
         self._subroutine_symbols = {"arg": {}, "var": {}}
 
-    def define(self, name: str, type_: str, kind: Kind):
+    def define(self, name: str, type_: str, kind: str):
         if self.kind_of(name):
             raise Exception(f"Symbol {name} is already defined")
 
-        index = self.var_count(kind)
         kind = Kind(kind)
+        index = self.var_count(kind)
 
         match kind:
             case Kind.STATIC:
@@ -51,14 +51,14 @@ class SymbolTable:
                 raise NotImplementedError(f"Unknown symbol type: {kind}")
 
     def kind_of(self, name: str):
-        if s := self._subroutine_symbols["var"].get(name):
-            return s["kind"]
-        elif s := self._subroutine_symbols["arg"].get(name):
-            return s["kind"]
-        elif s := self._class_symbols["field"].get(name):
-            return s["kind"]
-        elif s := self._class_symbols["static"].get(name):
-            return s["kind"]
+        if self._subroutine_symbols["var"].get(name):
+            return "var"
+        elif self._subroutine_symbols["arg"].get(name):
+            return "arg"
+        elif self._class_symbols["field"].get(name):
+            return "field"
+        elif self._class_symbols["static"].get(name):
+            return "static"
 
     def type_of(self, name: str):
         if s := self._subroutine_symbols["var"].get(name):

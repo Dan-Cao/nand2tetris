@@ -38,7 +38,7 @@ def _process_file(filename):
 
     tree = compilation_engine.compile_class()
     ET.indent(tree)
-    tree_str = ET.tostring(tree, encoding="unicode", short_empty_elements=False)
+    tree_str = ET.tostring(tree, encoding="unicode", short_empty_elements=True)
     output_file.write_text(tree_str)
 
 
