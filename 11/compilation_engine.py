@@ -357,7 +357,25 @@ class CompilationEngine:
         e.append(self._eat("="))
         e.append(self.compile_expression())
         e.append(self._eat(";"))
+
+        self._vm_writer.write_pop(
+            segment=self._identifier_category_to_segment(identifier.attrib["category"]),
+            index=int(identifier.attrib["index"]),
+        )
         return e
+
+    def _identifier_category_to_segment(self, category):
+        match category:
+            case "var":
+                return Segment.LOCAL
+            case "arg":
+                return Segment.ARG
+            case "field":
+                return Segment.THIS
+            case "static":
+                return Segment.STATIC
+            case _:
+                raise NotImplementedError(f"Don't know how to handle identifier of category {category}")
 
     def compile_while(self, class_name):
         e = ET.Element("whileStatement")
@@ -456,6 +474,15 @@ class CompilationEngine:
                 Keyword.NULL,
                 Keyword.THIS,
             ]:
+                match keyword := self._tokenizer.key_word():
+                    case Keyword.TRUE:
+                        self._vm_writer.write_push(segment=Segment.CONST, index=0)
+                        self._vm_writer.write_arithmetic(command=ArithmeticCommand.NOT)
+                    case Keyword.FALSE:
+                        self._vm_writer.write_push(segment=Segment.CONST, index=0)
+                    case _:
+                        raise NotImplementedError(f"Don't know how to handle keyword {keyword}")
+
                 e.append(self._eat(Keyword.TRUE, Keyword.FALSE, Keyword.NULL, Keyword.THIS))
             case TokenType.SYMBOL if self._tokenizer.symbol() in "-~":
                 op = self._tokenizer.symbol()
@@ -490,20 +517,33 @@ class CompilationEngine:
                 # function call
                 elif self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == "(":
                     e.append(self._eat("("))
-                    e.append(self.compile_expression_list())
+                    expression_list = self.compile_expression_list()
+                    e.append(expression_list)
                     e.append(self._eat(")"))
                     identifier1.attrib.update({"category": "subroutine", "usage": "used"})
+
+                    subroutine_name = identifier1.text
+                    expression_count = int(expression_list.attrib["count"])
+                    self._vm_writer.write_call(name=subroutine_name, n_args=expression_count)
+
                 # method call
                 elif self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ".":
                     e.append(self._eat("."))
                     identifier2 = self._compile_identifier("function name expected")
                     e.append(identifier2)
                     e.append(self._eat("("))
-                    e.append(self.compile_expression_list())
+                    expression_list = self.compile_expression_list()
+                    e.append(expression_list)
                     e.append(self._eat(")"))
 
                     identifier1.attrib.update({"category": "class", "usage": "used"})
                     identifier2.attrib.update({"category": "subroutine", "usage": "used"})
+
+                    class_name = identifier1.text
+                    subroutine_name = identifier2.text
+                    expression_count = int(expression_list.attrib["count"])
+                    self._vm_writer.write_call(name=f"{class_name}.{subroutine_name}", n_args=expression_count)
+
                 else:
                     identifier1.attrib.update(
                         {
@@ -511,6 +551,11 @@ class CompilationEngine:
                             "index": str(self._symbol_table.index_of(identifier1.text)),
                             "usage": "used",
                         }
+                    )
+
+                    self._vm_writer.write_push(
+                        segment=self._identifier_category_to_segment(identifier1.attrib["category"]),
+                        index=int(identifier1.attrib["index"]),
                     )
 
             case _:
