@@ -235,13 +235,25 @@ class CompilationEngine:
         e = ET.Element("varDec")
 
         e.append(self._eat(Keyword.VAR))
-        e.append(self._compile_type())
+        var_type = self._compile_type()
+        e.append(var_type)
 
-        e.append(self._compile_identifier("variable identifier expected"))
+        identifier = self._compile_identifier("variable identifier expected")
+        e.append(identifier)
+
+        self._symbol_table.define(name=identifier.text, type_=var_type.text, kind="var")
+        identifier.attrib.update(
+            {"category": "local", "usage": "declared", "index": str(self._symbol_table.index_of(identifier.text))}
+        )
 
         while self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ",":
             e.append(self._eat(","))
-            e.append(self._compile_identifier("variable identifier expected"))
+            identifier = self._compile_identifier("variable identifier expected")
+            e.append(identifier)
+            self._symbol_table.define(name=identifier.text, type_=var_type.text, kind="var")
+            identifier.attrib.update(
+                {"category": "local", "usage": "declared", "index": str(self._symbol_table.index_of(identifier.text))}
+            )
 
         e.append(self._eat(";"))
 
