@@ -53,7 +53,8 @@ class CompilationEngine:
             "class must be followed by identifier",
         )
         identifier = ET.SubElement(e, "identifier")
-        identifier.text = f" {self._tokenizer.identifier()} "
+        identifier.text = self._tokenizer.identifier()
+        identifier.attrib.update({"category": "class", "usage": "declared"})
         self._tokenizer.advance()
 
         e.append(self._eat("{"))
@@ -152,6 +153,7 @@ class CompilationEngine:
         elif self._tokenizer.token_type() == TokenType.IDENTIFIER:
             identifier = ET.SubElement(e, "identifier")
             identifier.text = f" {self._tokenizer.identifier()} "
+            identifier.attrib.update({"category": "class", "usage": "used"})
             self._tokenizer.advance()
         else:
             self._raise_syntax_error("Subroutine must have return type")
@@ -161,7 +163,8 @@ class CompilationEngine:
             "Subroutine name expected",
         )
         identifier = ET.SubElement(e, "identifier")
-        identifier.text = f" {self._tokenizer.identifier()} "
+        identifier.text = self._tokenizer.identifier()
+        identifier.attrib.update({"category": "subroutine", "usage": "declared"})
         self._tokenizer.advance()
 
         e.append(self._eat("("))
