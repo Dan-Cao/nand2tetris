@@ -12,6 +12,7 @@ class CompilationEngine:
         self._vm_writer = VMWriter()
         self._if_counter = 0
         self._while_counter = 0
+        self._class_var_count = 0
 
     def get_vm_commands(self):
         return self._vm_writer.get_vm_commands()
@@ -105,6 +106,7 @@ class CompilationEngine:
         e = ET.Element("classVarDec")
 
         kind = self._eat(Keyword.STATIC, Keyword.FIELD)
+        is_field = kind.text == Keyword.FIELD.value
         e.append(kind)
 
         type_ = self._compile_type()
@@ -121,6 +123,8 @@ class CompilationEngine:
         identifier.attrib.update(
             {"category": kind.text, "index": str(self._symbol_table.index_of(identifier.text)), "usage": "declared"}
         )
+        if is_field:
+            self._class_var_count += 1
         self._tokenizer.advance()
 
         while self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ",":
@@ -138,6 +142,8 @@ class CompilationEngine:
             identifier.attrib.update(
                 {"category": kind.text, "index": str(self._symbol_table.index_of(identifier.text)), "usage": "declared"}
             )
+            if is_field:
+                self._class_var_count += 1
             self._tokenizer.advance()
 
         e.append(self._eat(";"))
@@ -149,7 +155,8 @@ class CompilationEngine:
         self._while_counter = 0
 
         e = ET.Element("subroutineDec")
-        e.append(self._eat(Keyword.CONSTRUCTOR, Keyword.FUNCTION, Keyword.METHOD))
+        subroutine_type = self._eat(Keyword.CONSTRUCTOR, Keyword.FUNCTION, Keyword.METHOD)
+        e.append(subroutine_type)
 
         if self._tokenizer.token_type() == TokenType.KEYWORD:
             self._assert(
@@ -182,7 +189,11 @@ class CompilationEngine:
         e.append(self.compile_parameter_list())
         e.append(self._eat(")"))
 
-        e.append(self.compile_subroutine_body(class_name=class_name, subroutine_name=subroutine_name))
+        e.append(
+            self.compile_subroutine_body(
+                class_name=class_name, subroutine_name=subroutine_name, subroutine_type=subroutine_type
+            )
+        )
         return e
 
     def compile_parameter_list(self):
@@ -233,7 +244,7 @@ class CompilationEngine:
 
         return e
 
-    def compile_subroutine_body(self, class_name, subroutine_name):
+    def compile_subroutine_body(self, class_name, subroutine_name, subroutine_type):
         e = ET.Element("subroutineBody")
 
         e.append(self._eat("{"))
@@ -244,6 +255,11 @@ class CompilationEngine:
         self._vm_writer.write_function(
             name=f"{class_name}.{subroutine_name}", n_locals=self._symbol_table.var_count(Kind.VAR)
         )
+
+        if subroutine_type.text == Keyword.CONSTRUCTOR.value:
+            self._vm_writer.write_push(segment=Segment.CONST, index=self._class_var_count)
+            self._vm_writer.write_call(name="Memory.alloc", n_args=1)
+            self._vm_writer.write_pop(segment=Segment.POINTER, index=0)
 
         e.append(self.compile_statements(class_name=class_name))
         e.append(self._eat("}"))
@@ -342,7 +358,7 @@ class CompilationEngine:
         # Function call with this class
         else:
             identifier1.attrib.update({"category": "subroutine", "usage": "used"})
-            full_name = f"{class_name.text}.{identifier1.text}"
+            full_name = f"{class_name}.{identifier1.text}"
 
         e.append(self._eat("("))
         expression_list = self.compile_expression_list()
@@ -517,6 +533,8 @@ class CompilationEngine:
                         self._vm_writer.write_arithmetic(command=ArithmeticCommand.NOT)
                     case Keyword.FALSE:
                         self._vm_writer.write_push(segment=Segment.CONST, index=0)
+                    case Keyword.THIS:
+                        self._vm_writer.write_push(segment=Segment.POINTER, index=0)
                     case _:
                         raise NotImplementedError(f"Don't know how to handle keyword {keyword}")
 
@@ -569,6 +587,22 @@ class CompilationEngine:
                     identifier2 = self._compile_identifier("function name expected")
                     e.append(identifier2)
                     e.append(self._eat("("))
+
+                    n_args = 0
+                    id1_is_object = self._symbol_table.type_of(name=identifier1.text)
+                    if id1_is_object:
+                        id1_class = self._symbol_table.type_of(name=identifier1.text)
+                        self._vm_writer.write_push(
+                            segment=self._identifier_category_to_segment(
+                                category=self._symbol_table.kind_of(name=identifier1.text)
+                            ),
+                            index=self._symbol_table.index_of(name=identifier1.text),
+                        )
+                        n_args += 1
+                        full_name = f"{id1_class}.{identifier2.text}"
+                    else:
+                        full_name = f"{identifier1.text}.{identifier2.text}"
+
                     expression_list = self.compile_expression_list()
                     e.append(expression_list)
                     e.append(self._eat(")"))
@@ -576,10 +610,8 @@ class CompilationEngine:
                     identifier1.attrib.update({"category": "class", "usage": "used"})
                     identifier2.attrib.update({"category": "subroutine", "usage": "used"})
 
-                    class_name = identifier1.text
-                    subroutine_name = identifier2.text
-                    expression_count = int(expression_list.attrib["count"])
-                    self._vm_writer.write_call(name=f"{class_name}.{subroutine_name}", n_args=expression_count)
+                    n_args += int(expression_list.attrib["count"])
+                    self._vm_writer.write_call(name=full_name, n_args=n_args)
 
                 else:
                     identifier1.attrib.update(
