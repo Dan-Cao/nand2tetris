@@ -260,6 +260,9 @@ class CompilationEngine:
             self._vm_writer.write_push(segment=Segment.CONST, index=self._class_var_count)
             self._vm_writer.write_call(name="Memory.alloc", n_args=1)
             self._vm_writer.write_pop(segment=Segment.POINTER, index=0)
+        elif subroutine_type.text == Keyword.METHOD.value:
+            self._vm_writer.write_push(segment=Segment.ARG, index=0)
+            self._vm_writer.write_pop(segment=Segment.POINTER, index=0)
 
         e.append(self.compile_statements(class_name=class_name))
         e.append(self._eat("}"))
