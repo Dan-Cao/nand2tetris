@@ -382,14 +382,21 @@ class CompilationEngine:
                 raise NotImplementedError(f"Don't know how to handle identifier of category {category}")
 
     def compile_while(self, class_name):
+        while_counter = 0
+        self._while_counter += 1
         e = ET.Element("whileStatement")
         e.append(self._eat(Keyword.WHILE))
         e.append(self._eat("("))
+        self._vm_writer.write_label(f"WHILE_EXP{while_counter}")
         e.append(self.compile_expression())
+        self._vm_writer.write_arithmetic(command=ArithmeticCommand.NOT)
+        self._vm_writer.write_if(label=f"WHILE_END{while_counter}")
         e.append(self._eat(")"))
         e.append(self._eat("{"))
         e.append(self.compile_statements(class_name=class_name))
         e.append(self._eat("}"))
+        self._vm_writer.write_goto(label=f"WHILE_EXP{while_counter}")
+        self._vm_writer.write_label(label=f"WHILE_END{while_counter}")
         return e
 
     def compile_return(self):
