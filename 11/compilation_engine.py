@@ -10,6 +10,8 @@ class CompilationEngine:
         self._tokenizer = tokenizer
         self._symbol_table = SymbolTable()
         self._vm_writer = VMWriter()
+        self._if_counter = 0
+        self._while_counter = 0
 
     def get_vm_commands(self):
         return self._vm_writer.get_vm_commands()
@@ -143,6 +145,8 @@ class CompilationEngine:
 
     def compile_subroutine(self, class_name):
         self._symbol_table.start_subroutine()
+        self._if_counter = 0
+        self._while_counter = 0
 
         e = ET.Element("subroutineDec")
         e.append(self._eat(Keyword.CONSTRUCTOR, Keyword.FUNCTION, Keyword.METHOD))
@@ -402,20 +406,30 @@ class CompilationEngine:
         return e
 
     def compile_if(self, class_name):
+        if_counter = self._if_counter
+        self._if_counter += 1
+
         e = ET.Element("ifStatement")
         e.append(self._eat(Keyword.IF))
         e.append(self._eat("("))
         e.append(self.compile_expression())
         e.append(self._eat(")"))
         e.append(self._eat("{"))
+        self._vm_writer.write_if(label=f"IF_TRUE{if_counter}")
+        self._vm_writer.write_goto(label=f"IF_FALSE{if_counter}")
+        self._vm_writer.write_label(label=f"IF_TRUE{if_counter}")
         e.append(self.compile_statements(class_name=class_name))
         e.append(self._eat("}"))
+        self._vm_writer.write_goto(label=f"IF_END{if_counter}")
 
         if self._tokenizer.token_type() == TokenType.KEYWORD and self._tokenizer.key_word() == Keyword.ELSE:
             e.append(self._eat(Keyword.ELSE))
             e.append(self._eat("{"))
+            self._vm_writer.write_label(label=f"IF_FALSE{if_counter}")
             e.append(self.compile_statements(class_name=class_name))
             e.append(self._eat("}"))
+
+        self._vm_writer.write_label(label=f"IF_END{if_counter}")
         return e
 
     def compile_expression(self):
