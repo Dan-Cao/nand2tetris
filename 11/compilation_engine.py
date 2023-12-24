@@ -422,7 +422,7 @@ class CompilationEngine:
                 raise NotImplementedError(f"Don't know how to handle identifier of category {category}")
 
     def compile_while(self, class_name):
-        while_counter = 0
+        while_counter = self._while_counter
         self._while_counter += 1
         e = ET.Element("whileStatement")
         e.append(self._eat(Keyword.WHILE))
@@ -467,16 +467,17 @@ class CompilationEngine:
         self._vm_writer.write_label(label=f"IF_TRUE{if_counter}")
         e.append(self.compile_statements(class_name=class_name))
         e.append(self._eat("}"))
-        self._vm_writer.write_goto(label=f"IF_END{if_counter}")
 
         if self._tokenizer.token_type() == TokenType.KEYWORD and self._tokenizer.key_word() == Keyword.ELSE:
+            self._vm_writer.write_goto(label=f"IF_END{if_counter}")
             e.append(self._eat(Keyword.ELSE))
             e.append(self._eat("{"))
             self._vm_writer.write_label(label=f"IF_FALSE{if_counter}")
             e.append(self.compile_statements(class_name=class_name))
             e.append(self._eat("}"))
-
-        self._vm_writer.write_label(label=f"IF_END{if_counter}")
+            self._vm_writer.write_label(label=f"IF_END{if_counter}")
+        else:
+            self._vm_writer.write_label(label=f"IF_FALSE{if_counter}")
         return e
 
     def compile_expression(self, class_name):
