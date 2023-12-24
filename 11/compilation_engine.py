@@ -315,6 +315,8 @@ class CompilationEngine:
         identifier1 = self._compile_identifier("class or subroutine identifier expected")
         e.append(identifier1)
 
+        # Method
+        n_args = 0
         if self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ".":
             e.append(self._eat("."))
             identifier2 = self._compile_identifier("class method identifier expected")
@@ -323,20 +325,34 @@ class CompilationEngine:
             identifier1.attrib.update({"category": "class", "usage": "used"})
             identifier2.attrib.update({"category": "subroutine", "usage": "used"})
 
-            full_name = f"{identifier1.text}.{identifier2.text}"
+            id1_is_object = self._symbol_table.type_of(identifier1.text)
+            if id1_is_object:
+                identifier1_type = self._symbol_table.type_of(identifier1.text)
+
+                full_name = f"{identifier1_type}.{identifier2.text}"
+                n_args += 1
+                self._vm_writer.write_push(
+                    segment=self._identifier_category_to_segment(
+                        category=self._symbol_table.kind_of(name=identifier1.text)
+                    ),
+                    index=self._symbol_table.index_of(name=identifier1.text),
+                )
+            else:
+                full_name = f"{identifier1.text}.{identifier2.text}"
+        # Function call with this class
         else:
             identifier1.attrib.update({"category": "subroutine", "usage": "used"})
             full_name = f"{class_name.text}.{identifier1.text}"
 
         e.append(self._eat("("))
         expression_list = self.compile_expression_list()
-        expression_count = int(expression_list.attrib["count"])
+        n_args += int(expression_list.attrib["count"])
         e.append(expression_list)
         e.append(self._eat(")"))
 
         e.append(self._eat(";"))
 
-        self._vm_writer.write_call(name=full_name, n_args=expression_count)
+        self._vm_writer.write_call(name=full_name, n_args=n_args)
         self._vm_writer.write_pop(segment=Segment.TEMP, index=0)
         return e
 
