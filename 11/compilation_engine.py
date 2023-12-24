@@ -12,7 +12,7 @@ class CompilationEngine:
         self._vm_writer = VMWriter()
         self._if_counter = 0
         self._while_counter = 0
-        self._class_var_count = 0
+        self._class_field_count = 0
 
     def get_vm_commands(self):
         return self._vm_writer.get_vm_commands()
@@ -124,7 +124,7 @@ class CompilationEngine:
             {"category": kind.text, "index": str(self._symbol_table.index_of(identifier.text)), "usage": "declared"}
         )
         if is_field:
-            self._class_var_count += 1
+            self._class_field_count += 1
         self._tokenizer.advance()
 
         while self._tokenizer.token_type() == TokenType.SYMBOL and self._tokenizer.symbol() == ",":
@@ -143,7 +143,7 @@ class CompilationEngine:
                 {"category": kind.text, "index": str(self._symbol_table.index_of(identifier.text)), "usage": "declared"}
             )
             if is_field:
-                self._class_var_count += 1
+                self._class_field_count += 1
             self._tokenizer.advance()
 
         e.append(self._eat(";"))
@@ -257,7 +257,7 @@ class CompilationEngine:
         )
 
         if subroutine_type.text == Keyword.CONSTRUCTOR.value:
-            self._vm_writer.write_push(segment=Segment.CONST, index=self._class_var_count)
+            self._vm_writer.write_push(segment=Segment.CONST, index=self._class_field_count)
             self._vm_writer.write_call(name="Memory.alloc", n_args=1)
             self._vm_writer.write_pop(segment=Segment.POINTER, index=0)
         elif subroutine_type.text == Keyword.METHOD.value:
