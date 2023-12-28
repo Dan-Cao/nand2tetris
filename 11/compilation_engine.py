@@ -528,7 +528,16 @@ class CompilationEngine:
                 self._tokenizer.advance()
             case TokenType.STRING_CONST:
                 str_const = ET.SubElement(e, "stringConstant")
-                str_const.text = f" {self._tokenizer.string_val()} "
+                str_const.text = self._tokenizer.string_val()
+
+                new_str = str_const.text
+                self._vm_writer.write_push(segment=Segment.CONST, index=len(new_str))
+                self._vm_writer.write_call(name="String.new", n_args=1)
+
+                for c in new_str:
+                    self._vm_writer.write_push(segment=Segment.CONST, index=ord(c))
+                    self._vm_writer.write_call(name="String.appendChar", n_args=2)
+
                 self._tokenizer.advance()
             case TokenType.KEYWORD if self._tokenizer.key_word() in [
                 Keyword.TRUE,
