@@ -398,14 +398,31 @@ class CompilationEngine:
             e.append(self.compile_expression(class_name=class_name))
             e.append(self._eat("]"))
 
-        e.append(self._eat("="))
-        e.append(self.compile_expression(class_name=class_name))
-        e.append(self._eat(";"))
+            self._vm_writer.write_push(
+                segment=self._identifier_category_to_segment(identifier.attrib["category"]),
+                index=int(identifier.attrib["index"]),
+            )
+            self._vm_writer.write_arithmetic(command=ArithmeticCommand.ADD)
 
-        self._vm_writer.write_pop(
-            segment=self._identifier_category_to_segment(identifier.attrib["category"]),
-            index=int(identifier.attrib["index"]),
-        )
+            e.append(self._eat("="))
+            e.append(self.compile_expression(class_name=class_name))
+            e.append(self._eat(";"))
+
+            # copy result to temp 0, restore pointer to array, and copy result from temp 0 to array
+            self._vm_writer.write_pop(segment=Segment.TEMP, index=0)
+            self._vm_writer.write_pop(segment=Segment.POINTER, index=1)
+            self._vm_writer.write_push(segment=Segment.TEMP, index=0)
+            self._vm_writer.write_pop(segment=Segment.THAT, index=0)
+
+        else:
+            e.append(self._eat("="))
+            e.append(self.compile_expression(class_name=class_name))
+            e.append(self._eat(";"))
+
+            self._vm_writer.write_pop(
+                segment=self._identifier_category_to_segment(identifier.attrib["category"]),
+                index=int(identifier.attrib["index"]),
+            )
         return e
 
     def _identifier_category_to_segment(self, category):
@@ -580,6 +597,20 @@ class CompilationEngine:
                     e.append(self._eat("["))
                     e.append(self.compile_expression(class_name=class_name))
                     e.append(self._eat("]"))
+
+                    # index into array
+                    self._vm_writer.write_push(
+                        segment=self._identifier_category_to_segment(
+                            category=self._symbol_table.kind_of(name=identifier1.text)
+                        ),
+                        index=self._symbol_table.index_of(name=identifier1.text),
+                    )
+                    self._vm_writer.write_arithmetic(command=ArithmeticCommand.ADD)
+
+                    # write value into array
+                    self._vm_writer.write_pop(segment=Segment.POINTER, index=1)
+                    self._vm_writer.write_push(segment=Segment.THAT, index=0)
+
                     identifier1.attrib.update(
                         {
                             "category": self._symbol_table.kind_of(identifier1.text),
