@@ -2,8 +2,8 @@ import re
 from enum import Enum
 
 KEYWORD_RE_RAW = (
-    "(class)|(constructor)|(function)|(method)|(field)|(static)|(var)|(int)|(char)|(boolean)|(void)|"
-    "(true)|(false)|(null)|(this)|(let)|(do)|(if)|(else)|(while)|(return)"
+    r"(?:(class)|(constructor)|(function)|(method)|(field)|(static)|(var)|(int)|(char)|(boolean)|(void)|"
+    r"(true)|(false)|(null)|(this)|(let)|(do)|(if)|(else)|(while)|(return))(?!\w)"
 )
 KEYWORD_RE = re.compile(KEYWORD_RE_RAW)
 

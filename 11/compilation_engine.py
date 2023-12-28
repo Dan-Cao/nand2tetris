@@ -573,6 +573,8 @@ class CompilationEngine:
                         self._vm_writer.write_push(segment=Segment.CONST, index=0)
                     case Keyword.THIS:
                         self._vm_writer.write_push(segment=Segment.POINTER, index=0)
+                    case Keyword.NULL:
+                        self._vm_writer.write_push(segment=Segment.CONST, index=0)
                     case _:
                         raise NotImplementedError(f"Don't know how to handle keyword {keyword}")
 
