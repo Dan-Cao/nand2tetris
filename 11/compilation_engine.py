@@ -158,6 +158,9 @@ class CompilationEngine:
         subroutine_type = self._eat(Keyword.CONSTRUCTOR, Keyword.FUNCTION, Keyword.METHOD)
         e.append(subroutine_type)
 
+        if subroutine_type.text == Keyword.METHOD.value:
+            self._symbol_table.define(name="this", type_=class_name, kind=Kind.ARG)
+
         if self._tokenizer.token_type() == TokenType.KEYWORD:
             self._assert(
                 self._tokenizer.key_word() in [Keyword.VOID, Keyword.INT, Keyword.CHAR, Keyword.BOOLEAN],
