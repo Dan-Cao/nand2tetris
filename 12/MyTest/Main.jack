@@ -1,0 +1,13 @@
+class Main {
+
+    function void main() {
+        do Output.printInt(Math.bit(-1, 15));
+        do Output.println();
+        do Output.printInt(16384 + 16384);
+        do Output.println();
+        do Output.printInt(-1 & (16384 + 16384));
+        do Output.println();
+        do Output.printInt(123);
+        return;
+    }
+}
