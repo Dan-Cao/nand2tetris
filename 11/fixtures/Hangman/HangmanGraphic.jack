@@ -1,0 +1,36 @@
+class HangmanGraphic {
+    function void draw(int guessesRemaining) {
+
+        if (guessesRemaining = 6) {
+            // Post
+            do Screen.drawLine(280, 170, 280, 80);
+            do Screen.drawLine(280, 80, 300, 80);
+            do Screen.drawLine(300, 80, 300, 90);
+        }
+        if (guessesRemaining = 5) {
+            // Head
+            do Screen.drawCircle(300, 100, 10);
+        }
+        if (guessesRemaining = 4) {
+            // Body
+            do Screen.drawLine(300, 110, 300, 140);
+        }
+        if (guessesRemaining = 3) {
+            // Left arm
+            do Screen.drawLine(290, 120, 300, 120);
+        }
+        if (guessesRemaining = 2) {
+            // Right arm
+            do Screen.drawLine(300, 120, 310, 120);
+        }
+        if (guessesRemaining = 1) {
+            // Left leg
+            do Screen.drawLine(300, 140, 290, 155);
+        }
+        if (guessesRemaining = 0) {
+            // Right leg
+            do Screen.drawLine(300, 140, 310, 155);
+        }
+        return;
+    }
+}

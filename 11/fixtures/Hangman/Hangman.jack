@@ -1,0 +1,101 @@
+class Hangman {
+    field String secret;
+    field String hint;
+    field int secretLength;
+    field Array guessedChars;
+    field int guessesRemaining;
+
+    constructor Hangman new(String secretWord, int maxGuesses) {
+        let secret = secretWord;
+        let secretLength = secret.length();
+        let guessesRemaining = maxGuesses;
+
+        do initGuessArray();
+        do initHintString();
+
+        return this;
+    }
+
+    method void initGuessArray() {
+        var int i;
+
+        let guessedChars = Array.new(secretLength);
+        let i = 0;
+
+        while (i < secretLength){
+            let guessedChars[i] = false;
+            let i = i + 1;
+        }
+
+        return;
+    }
+
+    method void initHintString() {
+        var int i;
+        var String underscore;
+        var char underscoreChar;
+
+        let underscore = "_";
+        let underscoreChar = underscore.charAt(0);
+
+        let hint = String.new(secretLength);
+
+        while (i < secretLength) {
+            do hint.appendChar(underscoreChar);
+            let i = i + 1;
+        }
+
+        return;
+    }
+
+    method void guessChar(char guess) {
+        var int i;
+        var boolean matched;
+
+        let i = 0;
+        let matched = false;
+
+        while (i < secretLength) {
+            if (secret.charAt(i) = guess) {
+                let guessedChars[i] = true;
+                let matched = true;
+
+                do hint.setCharAt(i, guess);
+            }
+            let i = i + 1;
+        }
+
+        if (~matched) {
+            let guessesRemaining = guessesRemaining - 1;
+        }
+
+        return;
+    }
+
+    method boolean gameWon() {
+        var int i;
+
+        let i = 0;
+
+        while (i < secretLength) {
+            if (guessedChars[i] = false) {
+                return false;
+            }
+            let i = i + 1;
+        }
+
+        return true;
+    }
+
+    method String getHint() {
+        return hint;
+    }
+
+    method int getGuessesRemaining() {
+        return guessesRemaining;
+    }
+
+    method boolean gameActive() {
+        return guessesRemaining > 0;
+    }
+}

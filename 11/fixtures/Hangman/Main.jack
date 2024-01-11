@@ -1,0 +1,35 @@
+/** Hangman program. */
+class Main {
+    function void main() {
+        var Hangman hangman;
+
+        let hangman = Hangman.new("BANANA", 7);
+
+        do Output.printString("Enter your guess");
+        do Output.println();
+        do Output.println();
+
+        while (hangman.gameActive()) {
+            do Output.printString(hangman.getHint());
+
+            if (hangman.gameWon()) {
+                do Output.println();
+                do Output.println();
+                do Output.printString("You won!");
+                return;
+            }
+
+            do Output.printString(" ");
+            do hangman.guessChar(Keyboard.readChar());
+            do Output.println();
+
+            do HangmanGraphic.draw(hangman.getGuessesRemaining());
+
+        }
+
+        do Output.println();
+        do Output.printString("Game over! :(");
+
+        return;
+    }
+}
