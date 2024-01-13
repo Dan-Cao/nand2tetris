@@ -109,17 +109,16 @@ class Math {
 
     /** Returns the integer part of the square root of x. */
     function int sqrt(int x) {
-        var int y, j, pow, yPlusPowSquared;
+        var int y, j;
 
         let y = 0;
-        let pow = 1;
-        while (j < 7) {
-            let yPlusPowSquared = Math.multiply((y + pow), (y + pow));
-            if ((yPlusPowSquared < x) | (yPlusPowSquared = x) | (yPlusPowSquared > 0)) {
-                let y = y + pow;
+        let j = 7;
+
+        while (j > -1) {
+            if (((((y + twoToThe[j]) * (y + twoToThe[j])) - 1) < x) & (((y + twoToThe[j]) * (y + twoToThe[j]))  > -1)) {
+                let y = y + twoToThe[j];
             }
-            let pow = pow + pow;
-            let j = j + 1;
+            let j = j - 1;
         }
 
         return y;
