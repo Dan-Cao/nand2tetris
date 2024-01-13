@@ -77,26 +77,22 @@ class Math {
         var int q;
         var bool pos;
 
-        if ((x > 0) & (y > 0)) {
+        if (((x < 0) & (y < 0)) | ((x > -1) & (y > -1))){
             let pos = true;
         } else {
-            if ((x > 0) | (y > 0)) {
-                let pos = false;
-            }  else {
-                let pos = true;
-            }
-        }
-
-        if ((y > x) | (y < 0)){
-            return 0;
+            let pos = false;
         }
 
         let x = Math.abs(x);
         let y = Math.abs(y);
 
+        if (y > x) {
+            return 0;
+        }
+
         let q = Math.divide(x, y + y);
 
-        if ((x - Math.multiply(2, Math.multiply(x, y))) < y){
+        if ((x - (2 * q * y)) < y){
             if (pos) {
                 return q + q;
             } else {
