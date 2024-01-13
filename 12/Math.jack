@@ -77,26 +77,22 @@ class Math {
         var int q;
         var bool pos;
 
-        if ((x > 0) & (y > 0)) {
+        if (((x < 0) & (y < 0)) | ((x > -1) & (y > -1))){
             let pos = true;
         } else {
-            if ((x > 0) | (y > 0)) {
-                let pos = false;
-            }  else {
-                let pos = true;
-            }
-        }
-
-        if ((y > x) | (y < 0)){
-            return 0;
+            let pos = false;
         }
 
         let x = Math.abs(x);
         let y = Math.abs(y);
 
+        if (y > x) {
+            return 0;
+        }
+
         let q = Math.divide(x, y + y);
 
-        if ((x - Math.multiply(2, Math.multiply(x, y))) < y){
+        if ((x - (2 * q * y)) < y){
             if (pos) {
                 return q + q;
             } else {
@@ -113,17 +109,16 @@ class Math {
 
     /** Returns the integer part of the square root of x. */
     function int sqrt(int x) {
-        var int y, j, pow, yPlusPowSquared;
+        var int y, j;
 
         let y = 0;
-        let pow = 1;
-        while (j < 7) {
-            let yPlusPowSquared = Math.multiply((y + pow), (y + pow));
-            if ((yPlusPowSquared < x) | (yPlusPowSquared = x) | (yPlusPowSquared > 0)) {
-                let y = y + pow;
+        let j = 7;
+
+        while (j > -1) {
+            if (((((y + twoToThe[j]) * (y + twoToThe[j])) - 1) < x) & (((y + twoToThe[j]) * (y + twoToThe[j]))  > -1)) {
+                let y = y + twoToThe[j];
             }
-            let pow = pow + pow;
-            let j = j + 1;
+            let j = j - 1;
         }
 
         return y;
