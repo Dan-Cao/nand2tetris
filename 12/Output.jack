@@ -5,7 +5,7 @@
 
 /**
  * A library of functions for writing text on the screen.
- * The Hack physical screen consists of 512 rows of 256 pixels each.
+ * The Hack physical screen consists of 256 rows of 512 pixels each.
  * The library uses a fixed font, in which each character is displayed 
  * within a frame which is 11 pixels high (including 1 pixel for inter-line 
  * spacing) and 8 pixels wide (including 2 pixels for inter-character spacing).
@@ -17,10 +17,16 @@
 class Output {
 
     // Character map for displaying characters
-    static Array charMaps; 
+    static Array charMaps;
+    static int x, y; // cursor position. x is column, y is row
+
 
     /** Initializes the screen, and locates the cursor at the screen's top-left. */
     function void init() {
+        let x = 0;
+        let y = 0;
+        do Output.initMap();
+        return;
     }
 
     // Initializes the character map array
@@ -176,28 +182,84 @@ class Output {
     /** Moves the cursor to the j-th column of the i-th row,
      *  and erases the character displayed there. */
     function void moveCursor(int i, int j) {
+        var int row;
+
+        let row = 0;
+        let x = j;
+        let y = i;
+
+        while (row < 11) {
+            do Memory.poke(16384 + (((y * 11) + row) * 32) + (x/2), 0);
+            let row = row + 1;
+        }
+
+        return;
     }
 
     /** Displays the given character at the cursor location,
      *  and advances the cursor one column forward. */
     function void printChar(char c) {
+        var int row;
+        var Array charMap;
+
+        let charMap = Output.getMap(c);
+
+        while (row < 11) {
+            // TODO - each address is 16 bit and can hold two char positions. Handle this
+            do Memory.poke(16384 + (((y * 11) + row) * 32) + (x/2), charMap[row]);
+            let row = row + 1;
+        }
+
+        if (x < 63){
+            let x = x + 1;
+        }
+
+        return;
     }
 
     /** displays the given string starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printString(String s) {
+        var int i;
+
+        let i = 0;
+        while (i < s.length()){
+            do Output.printChar(s.charAt(i));
+            let i = i + 1;
+        }
+        return;
     }
 
     /** Displays the given integer starting at the cursor location,
      *  and advances the cursor appropriately. */
     function void printInt(int i) {
+        var String myStr;
+
+        let myStr = String.new(6);
+        do myStr.setInt(i);
+        do Output.printString(myStr);
+        do myStr.dispose();
+        return;
     }
 
     /** Advances the cursor to the beginning of the next line. */
     function void println() {
+        let x = 0;
+
+        if (y = 22){
+            let y = 0;
+        } else {
+            let y = y + 1;
+        }
+
+        return;
     }
 
     /** Moves the cursor one column back. */
     function void backSpace() {
+        if (x > 0){
+            let x = x - 1;
+        }
+        return;
     }
 }
