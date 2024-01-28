@@ -10,12 +10,14 @@
  */ 
 class Memory {
     static Array memory;
-    static int free;
+    static int freeList;
 
     /** Initializes the class. */
     function void init() {
         let memory = 0;
-        let free = 2048;
+        let freeList = 2048;
+        let memory[freeList] = 16383 - 2048;
+        let memory[freeList + 1] = null;
         return;
     }
 
@@ -33,17 +35,67 @@ class Memory {
     /** Finds an available RAM block of the given size and returns
      *  a reference to its base address. */
     function int alloc(int size) {
-        var int pointer;
+        var int segmentBase, segmentLength, nextSegmentBase, pointerToThisSegment, block;
 
-        let pointer = free;
-        let free = free + size;
+        // Start traversing linked list
+        let nextSegmentBase = freeList;
+        let pointerToThisSegment = -1;
 
-        return pointer;
+        while (~(nextSegmentBase = 0)) {
+            let segmentBase = nextSegmentBase;
+            let segmentLength = memory[segmentBase];
+            let nextSegmentBase = memory[segmentBase + 1];
+
+            // Give the whole segment
+            if ((size = (segmentLength - 1)) | (size = (segmentLength - 2))){
+                if (pointerToThisSegment = -1){
+                    let freeList = 0;
+                } else {
+                    let memory[pointerToThisSegment] = nextSegmentBase;
+                }
+                return segmentBase + 1;
+            }
+            // Split the segment
+            if (size < (segmentLength - 2)) {
+                let block = ((segmentBase + (segmentLength - 1)) - size) + 1;
+                let memory[block - 1] = size + 1;
+
+                // Update length of original segment
+                let memory[segmentBase] = memory[segmentBase] - (size + 1);
+                return block;
+            }
+
+            // Set up for next traverse
+            let pointerToThisSegment = segmentBase + 1;
+        }
+
+        return -1;
     }
 
     /** De-allocates the given object (cast as an array) by making
      *  it available for future allocations. */
     function void deAlloc(Array o) {
+        var int objectSegmentBase, segmentBase, pointerToNextSegment;
+        let objectSegmentBase = o - 1;
+
+        // Set pointer to next segment to null as this will go onto the end of the linked list
+        let memory[objectSegmentBase + 1] = null;
+
+        // Handle case where there is previously no free memory
+        if (freeList = 0){
+            let freeList = objectSegmentBase;
+            return;
+        }
+
+        // Traverse until we get to last item in free list
+        let pointerToNextSegment = freeList;
+        while (pointerToNextSegment > 0){
+            let segmentBase = pointerToNextSegment;
+            let pointerToNextSegment = memory[segmentBase + 1];
+        }
+
+        // Append object segment to end of free list
+        let memory[segmentBase + 1] = objectSegmentBase;
         return;
     }    
 }
